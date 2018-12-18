@@ -23,7 +23,7 @@ setup(
     ],
     entry_points={
         "resilient.circuits.components": [
-            "AvalonComponent = avalon.components.AvalonComponent:AvalonComponent"
+            "AvalonFunctions = avalon.components.functions:AvalonFunctions"
         ],
         "resilient.circuits.configsection": ["gen_config = avalon.util.config:config_section_data"],
         "resilient.circuits.customize": ["customize = avalon.util.customize:customization_data"],
