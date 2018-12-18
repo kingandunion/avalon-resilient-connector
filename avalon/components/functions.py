@@ -1,7 +1,9 @@
 # Simple example component for resilient-circuits
 import json
 import logging
-from resilient_circuits import ResilientComponent, handler, ActionMessage, StatusMessage
+
+from circuits.core.handlers import handler
+from resilient_circuits.actions_component import ResilientComponent, ActionMessage, StatusMessage
 
 from avalon.lib.resilient_common import validateFields
 from avalon.lib.errors import IntegrationError
@@ -50,17 +52,13 @@ class AvalonFunctions(ResilientComponent):
             who = event.message["user"]["email"]
 
             workspace_title = "{} (IBM Resilient)".format(incident["name"])
-            workspace_summary = "Incident ID: {}, created by {}".format(incident["id"], who)  # text
+            workspace_summary = "Created by {} from IBM Resilient Incident ID: {}, c".format(who, incident["id"])
 
             logger.info(workspace_title)
             logger.info(workspace_summary)
 
-            yield StatusMessage("Starting...")
-            
             # TODO:
             # resp = create_workspace(self.log, self.options, workspace_title, workspace_summary, self.create_workspace_callback)
-            
-            yield StatusMessage("Avalon workspace created.")
             
             # Post a new artifact to the incident, using the provided REST API client 
             new_artifact = {
@@ -74,9 +72,7 @@ class AvalonFunctions(ResilientComponent):
             # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
             return "Avalon workspace created successfully."
         except Exception as err:
-            logger.error("Unexpected error", exc_info=True)
-            # TODO: Add more details to the error message
-            return "Could not create Avalon workspace."
+            raise err
             
     def create_workspace_callback(self, resp):
         """ handle results such as this
