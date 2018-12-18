@@ -1,0 +1,4 @@
+include README.md
+include avalon/util/*
+include avalon/LICENSE
+include avalon/doc/*
