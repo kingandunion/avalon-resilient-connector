@@ -56,7 +56,7 @@ class AvalonFunctions(ResilientComponent):
             who = event.message["user"]["email"]
 
             workspace_title = "{} (IBM Resilient)".format(incident["name"])
-            workspace_summary = "Created by {} from IBM Resilient Incident ID: {}, c".format(who, incident["id"])
+            workspace_summary = "Created from IBM Resilient by {}. IBM Resilient Incident ID: {}".format(who, incident["id"])
 
             # call API
             data = {
@@ -68,11 +68,12 @@ class AvalonFunctions(ResilientComponent):
 
             resp = create_workspace(logger, self.api_token, data)
 
-            """ handle results such as this
-                {"errors":[{"detail":"Incorrect type. Expected resource identifier object, received str.","source":{"pointer":"/data/attributes/Owners"},"status":"400"}]}
-            """
+            result = resp.json()
+
             if resp.status_code >= 300:
-                result = resp.json()
+                # handle results such as this:
+                # {"errors":[{"detail":"Incorrect type. Expected resource identifier object, received str.","source":{"pointer":"/data/attributes/Owners"},"status":"400"}]}
+               
                 if 'errors' in result:
                     msg = json.dumps(result, indent=4, separators=(',', ': '))
                     logger.error(msg)
@@ -80,12 +81,17 @@ class AvalonFunctions(ResilientComponent):
                 
                 raise IntegrationError(resp.text)
 
-            # TODO: handle successfull response    
-
-            # Post a new artifact to the incident, using the provided REST API client 
+            # Post a new artifact to the incident, using the provided REST API client
+            # workspace data looks like: {'data': {'path': 'https://example.com...aces/22/ '}}
+            workspace_data = result['data']
+            workspace_url = workspace_data['path'].strip() 
             new_artifact = {
                 "type": "String",
-                "value": "Test artifact from {}".format(who)
+                "value": "Avalon Workspace",
+                "description": {
+                    "format" : "text", 
+                    "content" : 'Avalon Workspace Address: {}'.format(workspace_url)
+                }                    
             }
 
             new_artifact_uri = "/incidents/{}/artifacts".format(incident["id"])
