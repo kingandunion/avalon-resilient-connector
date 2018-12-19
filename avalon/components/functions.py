@@ -1,4 +1,3 @@
-# Simple example component for resilient-circuits
 import json
 import logging
 
@@ -8,8 +7,7 @@ from resilient_circuits.actions_component import ResilientComponent, ActionMessa
 from avalon.lib.resilient_common import validateFields
 from avalon.lib.errors import IntegrationError
 
-# TODO:
-# from .common import create_workspace
+from .common import create_workspace
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +20,12 @@ class AvalonFunctions(ResilientComponent):
         super(AvalonFunctions, self).__init__(opts)
         
         self.res_options = opts.get("resilient", {})
+
         self.options = opts.get("avalon", {})
         validateFields(["api_token"], self.options)
+
+        self.api_token = self.options['api_token']
+
 
     @handler("reload")
     def _reload(self, event, opts):
@@ -32,6 +34,8 @@ class AvalonFunctions(ResilientComponent):
         
         self.options = opts.get("avalon", {})
         validateFields(["api_token"], self.options)
+
+        self.api_token = self.options['api_token']
 
     @handler("avalon_create_workspace")
     def _avalon_create_workspace(self, event, *args, **kwargs):
@@ -54,12 +58,30 @@ class AvalonFunctions(ResilientComponent):
             workspace_title = "{} (IBM Resilient)".format(incident["name"])
             workspace_summary = "Created by {} from IBM Resilient Incident ID: {}, c".format(who, incident["id"])
 
-            logger.info(workspace_title)
-            logger.info(workspace_summary)
+            # call API
+            data = {
+                "Title": workspace_title, 
+                "Summary": workspace_summary, 
+                "TLP": "r", 
+                "ShareWithMyOrganization": False
+            }
 
-            # TODO:
-            # resp = create_workspace(self.log, self.options, workspace_title, workspace_summary, self.create_workspace_callback)
-            
+            resp = create_workspace(logger, self.api_token, data)
+
+            """ handle results such as this
+                {"errors":[{"detail":"Incorrect type. Expected resource identifier object, received str.","source":{"pointer":"/data/attributes/Owners"},"status":"400"}]}
+            """
+            if resp.status_code >= 300:
+                result = resp.json()
+                if 'errors' in result:
+                    msg = json.dumps(result, indent=4, separators=(',', ': '))
+                    logger.error(msg)
+                    return msg 
+                
+                raise IntegrationError(resp.text)
+
+            # TODO: handle successfull response    
+
             # Post a new artifact to the incident, using the provided REST API client 
             new_artifact = {
                 "type": "String",
@@ -74,15 +96,4 @@ class AvalonFunctions(ResilientComponent):
         except Exception as err:
             raise err
             
-    def create_workspace_callback(self, resp):
-        """ handle results such as this
-            {"error":{"message":"Invalid Input Provided","code":2001,"errors":["Content cannot be empty."]}}
-        """
-        result = resp.json()
-        if 'error' in result and result['error']['code'] == 2001:
-            msg = ": ".join((result['error']['message'], str(result['error']['errors'])))
-            logger.warning(msg)
-            StatusMessage(msg)
-            return {}
-        else:
-            raise IntegrationError(resp.text)
+        
