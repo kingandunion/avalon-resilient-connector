@@ -1,13 +1,13 @@
+import re
 import json
 import logging
 
 from circuits.core.handlers import handler
 from resilient_circuits.actions_component import ResilientComponent, ActionMessage, StatusMessage, FunctionError_
 
-from avalon.lib.resilient_common import validateFields
+from avalon.lib import resilient_api as res
 from avalon.lib.errors import IntegrationError
-
-from .common import create_workspace
+from avalon.lib import avalon_api as av
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class AvalonConnector(ResilientComponent):
         self.res_options = opts.get("resilient", {})
 
         self.options = opts.get("avalon", {})
-        validateFields(["api_token"], self.options)
+        res.validateFields(["api_token"], self.options)
 
         self.api_token = self.options["api_token"]
 
@@ -33,7 +33,7 @@ class AvalonConnector(ResilientComponent):
         self.res_options = opts.get("resilient", {})
         
         self.options = opts.get("avalon", {})
-        validateFields(["api_token"], self.options)
+        res.validateFields(["api_token"], self.options)
 
         self.api_token = self.options["api_token"]
 
@@ -67,32 +67,25 @@ class AvalonConnector(ResilientComponent):
                 "ShareWithMyOrganization": False
             }
 
-            resp = create_workspace(logger, self.api_token, data)
-
-            result = resp.json()
-
-            if resp.status_code >= 300:
-                # handle results such as this:
-                # {"errors":[{"detail":"Incorrect type. Expected resource identifier object, received str.","source":{"pointer":"/data/attributes/Owners"},"status":"400"}]}
-               
-                if "errors" in result:
-                    msg = json.dumps(result, indent=4, separators=(",", ": "))
-                    logger.error(msg)
-                    return msg 
-                
-                raise IntegrationError(resp.text)
+            resp = av.workspace_create(self.api_token, data, logger)
+            (error, msg) = av.check_error(resp, logger)
+            if error:
+                return msg
 
             # Post a new artifact to the incident, using the provided REST API client
             # workspace data looks like: {"data": {"path": "https://example.com...aces/22/ "}}
+            result = resp.json()
             workspace_data = result["data"]
             workspace_url = workspace_data["path"].strip() 
-            self._add_workspace_artifact(workspace_title, workspace_url, incident)
+            workspace_id = av.workspace_id_from_url(workspace_url)
+
+            res.incident_add_workspace_artifact(self.rest_client(), incident["id"], workspace_id, workspace_title, workspace_url)
 
             # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
             return "Avalon workspace created successfully."
         except Exception as err:
             # This will still mark the action as complete
-            return "Could not create Avalon workspace. Error: {}".format(str(err))
+            return "Error: {}".format(str(err))
 
             # TODO: Find out how we can return errors from custom action handlers    
             # see: https://10.1.0.151/docs/rest-api/json_AcknowledgementDTO.html
@@ -103,26 +96,7 @@ class AvalonConnector(ResilientComponent):
             #     "complete": True,
             #     "results" : { }
             # })
-
-    # see: https://10.1.0.151/docs/rest-api/json_IncidentArtifactDTO.html
-    # see: https://10.1.0.151/docs/rest-api/json_ObjectHandle.html
-    def _add_workspace_artifact(self, workspace_title, workspace_url, incident):
-        new_artifact = {
-            "type": {"name": "avalon_workspace_link"},
-            "value": workspace_title,
-            "description": {
-                "format" : "text", 
-                "content" : "Avalon Workspace Address: {}".format(workspace_url)
-            },
-            "properties": [
-                { 
-                    "name": "url",
-                    "value": workspace_url
-                }
-            ]                    
-        }
-
-        new_artifact_uri = "/incidents/{}/artifacts".format(incident["id"])
-        self.rest_client().post(new_artifact_uri, new_artifact)
             
-        
+
+
+
