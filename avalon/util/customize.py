@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Generate the Resilient customizations required for Avalon"""
+"""Generate the Resilient customizations required for avalon"""
 
 from __future__ import print_function
 from resilient_circuits.util import *
@@ -12,13 +12,13 @@ def codegen_reload_data():
                     "action_fields": [], 
                     "functions_params": [], 
                     "datatables": [], 
-                    "message_destinations": [], 
+                    "message_destinations": [u'avalon_connector'], 
                     "functions": [], 
                     "phases": [], 
                     "automatic_tasks": [], 
                     "scripts": [], 
                     "workflows": [],
-                    "actions": [] 
+                    "actions": [u'Avalon: Create Workspace']
                     }
     return reload_params
 
@@ -32,7 +32,7 @@ def customization_data(client=None):
 
 
     yield ImportDefinition(u"""
-eyJpZCI6IDEsICJmaWVsZHMiOiBbeyJjaG9zZW4iOiBmYWxzZSwgImludGVybmFsIjogZmFsc2Us
+eyJpZCI6IDIsICJmaWVsZHMiOiBbeyJjaG9zZW4iOiBmYWxzZSwgImludGVybmFsIjogZmFsc2Us
 ICJ1dWlkIjogImMzZjBlM2VkLTIxZTEtNGQ1My1hZmZiLWZlNWNhMzMwOGNjYSIsICJvcGVyYXRp
 b25zIjogW10sICJ2YWx1ZXMiOiBbXSwgImNoYW5nZWFibGUiOiB0cnVlLCAiaWQiOiAzOCwgIm5h
 bWUiOiAiaW5jX3RyYWluaW5nIiwgInRleHQiOiAiU2ltdWxhdGlvbiIsICJwcmVmaXgiOiBudWxs
@@ -47,9 +47,9 @@ dHMiOiBbXSwgIm5vdGlmaWNhdGlvbnMiOiBudWxsLCAidGltZWZyYW1lcyI6IG51bGwsICJpbmR1
 c3RyaWVzIjogbnVsbCwgInJlZ3VsYXRvcnMiOiBudWxsLCAiZ2VvcyI6IG51bGwsICJmdW5jdGlv
 bnMiOiBbXSwgInNlcnZlcl92ZXJzaW9uIjogeyJtYWpvciI6IDMwLCAibWlub3IiOiAwLCAiYnVp
 bGRfbnVtYmVyIjogMzQ3NiwgInZlcnNpb24iOiAiMzAuMC4zNDc2In0sICJleHBvcnRfZm9ybWF0
-X3ZlcnNpb24iOiAyLCAiZXhwb3J0X2RhdGUiOiAxNTQ1MDk3NjM4NjQ1LCAiaW5jaWRlbnRfdHlw
-ZXMiOiBbeyJ1cGRhdGVfZGF0ZSI6IDE1NDUwOTc3NDM0NTYsICJjcmVhdGVfZGF0ZSI6IDE1NDUw
-OTc3NDM0NTYsICJ1dWlkIjogImJmZWVjMmQ0LTM3NzAtMTFlOC1hZDM5LTRhMDAwNDA0NGFhMCIs
+X3ZlcnNpb24iOiAyLCAiZXhwb3J0X2RhdGUiOiAxNTQ1MzQzNDQ3NTM4LCAiaW5jaWRlbnRfdHlw
+ZXMiOiBbeyJ1cGRhdGVfZGF0ZSI6IDE1NDUzNDM4MTQ1NzMsICJjcmVhdGVfZGF0ZSI6IDE1NDUz
+NDM4MTQ1NzMsICJ1dWlkIjogImJmZWVjMmQ0LTM3NzAtMTFlOC1hZDM5LTRhMDAwNDA0NGFhMCIs
 ICJkZXNjcmlwdGlvbiI6ICJDdXN0b21pemF0aW9uIFBhY2thZ2VzIChpbnRlcm5hbCkiLCAiZXhw
 b3J0X2tleSI6ICJDdXN0b21pemF0aW9uIFBhY2thZ2VzIChpbnRlcm5hbCkiLCAibmFtZSI6ICJD
 dXN0b21pemF0aW9uIFBhY2thZ2VzIChpbnRlcm5hbCkiLCAiZW5hYmxlZCI6IGZhbHNlLCAic3lz

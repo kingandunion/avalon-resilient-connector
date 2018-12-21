@@ -6,5 +6,5 @@ def validateFields(fieldList, kwargs):
     :return: no return
     """
     for field in fieldList:
-        if field not in kwargs or kwargs.get(field) == '':
-            raise ValueError('Required field is missing or empty: ' + field)
+        if field not in kwargs or kwargs.get(field) == "":
+            raise ValueError("Required field is missing or empty: " + field)

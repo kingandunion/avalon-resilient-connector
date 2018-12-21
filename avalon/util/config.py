@@ -10,7 +10,7 @@ def config_section_data():
        when called by `resilient-circuits config [-c|-u]`
     """
     config_data = u"""[avalon]
-avalon_api_token=<avalon-api-token>
+api_token=<avalon-api-token>
     """
     return config_data
 

@@ -21,9 +21,12 @@ setup(
     classifiers=[
         'Programming Language :: Python',
     ],
+
+    # if you change any of these make sure you run:
+    # pip install -e ./avalon/
     entry_points={
         "resilient.circuits.components": [
-            "AvalonFunctions = avalon.components.functions:AvalonFunctions"
+            "AvalonConnector = avalon.components.connector:AvalonConnector"
         ],
         "resilient.circuits.configsection": ["gen_config = avalon.util.config:config_section_data"],
         "resilient.circuits.customize": ["customize = avalon.util.customize:customization_data"],
