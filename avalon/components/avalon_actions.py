@@ -88,6 +88,26 @@ class AvalonActions(ResilientComponent):
         # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
         return "Incident refreshed successfully."
 
+    # Handles avalon_add_node action 
+    @handler("avalon_add_node")
+    def _avalon_add_node(self, event, *args, **kwargs):
+        # This function is called with the action message,
+        # In the message we find the whole incident data (and other context)
+        incident = event.message["incident"]
+        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
+
+        artifact = event.message["artifact"]
+        logger.info("Called from artifact {}: {}".format(artifact["id"], artifact["value"]))
+
+        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+        if artifact["type"] == res.ArtifactType.dns_name:
+            # TODO: Add Avalon node of type "domain"
+            # This is not supported by the Avalon REST API yet
+            return "{} added to Avalon.".format(artifact["value"])
+
+        # We should never get here because the action is shown only for IP and Domain
+        return "Unsupported artifact."
+
     def _create_workspace(self, incident, who):
         # check whether Avalon workspace has been created for this incident already
         artifact = res.incident_get_workspace_artifact(self.rest_client(), incident["id"])

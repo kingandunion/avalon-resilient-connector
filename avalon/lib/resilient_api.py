@@ -1,3 +1,13 @@
+from enum import IntEnum
+
+# IBM Resilient Artifact Types 
+# see: https://10.1.0.151/docs/rest-api/ui/index.html#!/TypeREST/resource_TypeREST_getType_GET
+class ArtifactType(IntEnum):
+    """IBM Resilient Artifact Types 
+    """
+    ip_address = 1
+    dns_name = 2
+
 def validate_fields(fieldList, kwargs):
     """
     ensure required fields are present. Throw ValueError if not

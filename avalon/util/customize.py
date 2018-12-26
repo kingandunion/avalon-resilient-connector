@@ -18,7 +18,7 @@ def codegen_reload_data():
                     "automatic_tasks": [], 
                     "scripts": [], 
                     "workflows": [u"avalon_refresh"], 
-                    "actions": [u"Avalon: Create Workspace", u"Avalon: Refresh"] 
+                    "actions": [u"Avalon: Create Workspace", u"Avalon: Refresh", u"Avalon: Add Node"] 
                     }
     return reload_params
 
