@@ -11,13 +11,13 @@ from avalon.lib import avalon_api as av
 
 logger = logging.getLogger(__name__)
 
-class AvalonConnector(ResilientComponent):
-    # Subscribe to the message destination named "avalon_connector"
-    channel = "actions.avalon_connector"
+class AvalonActions(ResilientComponent):
+    # Subscribe to the message destination named "avalon_actions"
+    channel = "actions.avalon_actions"
     
     def __init__(self, opts):
         """constructor provides access to the configuration options"""
-        super(AvalonConnector, self).__init__(opts)
+        super(AvalonActions, self).__init__(opts)
         
         self.res_options = opts.get("resilient", {})
 
@@ -76,6 +76,17 @@ class AvalonConnector(ResilientComponent):
 
             # NOTE: This will still mark the action as complete in IBM Resilient
             return "Error: {}".format(str(err))
+
+    # Handles avalon_refresh action 
+    @handler("avalon_refresh")
+    def _avalon_refresh(self, event, *args, **kwargs):
+        # This function is called with the action message,
+        # In the message we find the whole incident data (and other context)
+        incident = event.message["incident"]
+        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
+
+        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+        return "Incident refreshed successfully."
 
     def _create_workspace(self, incident, who):
         # check whether Avalon workspace has been created for this incident already

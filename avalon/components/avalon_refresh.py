@@ -7,12 +7,12 @@ from resilient_circuits import ResilientComponent, function, handler, StatusMess
 import avalon.util.selftest as selftest
 
 
-class FunctionComponent(ResilientComponent):
-    """Component that implements Resilient function 'avalon_refresh_artifact"""
+class AvalonRefreshFunction(ResilientComponent):
+    """Component that implements Resilient function 'avalon_refresh"""
 
     def __init__(self, opts):
         """constructor provides access to the configuration options"""
-        super(FunctionComponent, self).__init__(opts)
+        super(AvalonRefreshFunction, self).__init__(opts)
         self.options = opts.get("avalon", {})
         selftest.selftest_function(opts)
 
@@ -21,9 +21,9 @@ class FunctionComponent(ResilientComponent):
         """Configuration options have changed, save new values"""
         self.options = opts.get("avalon", {})
 
-    @function("avalon_refresh_artifact")
-    def _avalon_refresh_artifact_function(self, event, *args, **kwargs):
-        """Function: Refreshes artifact data from artifact linked Avalon workspace"""
+    @function("avalon_refresh")
+    def _avalon_refresh_function(self, event, *args, **kwargs):
+        """Function: Pulls data from a linked Avalon workspace. Requires an Avalon Workspace artifact to be present in the incident. Avalon Workspace artifact can be created with the "Avalon: Create Workspace" custom menu command."""
         try:
             # Get the function parameters:
 

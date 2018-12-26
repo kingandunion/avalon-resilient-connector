@@ -26,7 +26,8 @@ setup(
     # pip install -e ./avalon/
     entry_points={
         "resilient.circuits.components": [
-            "AvalonConnector = avalon.components.avalon_connector:AvalonConnector"
+            "AvalonActions = avalon.components.avalon_actions:AvalonActions",
+            "AvalonRefreshFunction = avalon.components.avalon_refresh:AvalonRefreshFunction"
         ],
         "resilient.circuits.configsection": ["gen_config = avalon.util.config:config_section_data"],
         "resilient.circuits.customize": ["customize = avalon.util.customize:customization_data"],
