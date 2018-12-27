@@ -40,24 +40,23 @@ class AvalonActions(ResilientComponent):
     # Handles avalon_create_workspace action 
     @handler("avalon_create_workspace")
     def _avalon_create_workspace(self, event, *args, **kwargs):
-        # This function is called with the action message,
-        # In the message we find the whole incident data (and other context)
+        # the user who triggered the action
+        who = event.message["user"]["email"]
+
+        # incident data (and other context)
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
+        # TODO: Eventually we might allow user to specify the name and the summary 
+        # for the new Avalon workspace in IBM Resilient and pass those values 
+        # res.validate_fields([u"avalon_workspace_title", u"avalon_workspace_summary"], kwargs)
+
+        # workspace_title = clean_html(kwargs.get(u"avalon_workspace_title"))  # text
+        # workspace_summary = clean_html(kwargs.get(u"avalon_workspace_summary"))  # text
+
         try:
-            # TODO: Eventually we might allow user to specify the name and the summary 
-            # for the new Avalon workspace in IBM Resilient and pass those values 
-            # res.validate_fields([u"avalon_workspace_title", u"avalon_workspace_summary"], kwargs)
-
-            # workspace_title = clean_html(kwargs.get(u"avalon_workspace_title"))  # text
-            # workspace_summary = clean_html(kwargs.get(u"avalon_workspace_summary"))  # text
-
-            # The message also contains information about the user who triggered the action
-            who = event.message["user"]["email"]
-
             # create Avalon workspace
-            self._create_workspace(incident, who)
+            self._create_empty_workspace(incident, who)
 
             # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
             return "Avalon workspace created successfully."
@@ -80,35 +79,65 @@ class AvalonActions(ResilientComponent):
     # Handles avalon_refresh action 
     @handler("avalon_refresh")
     def _avalon_refresh(self, event, *args, **kwargs):
-        # This function is called with the action message,
-        # In the message we find the whole incident data (and other context)
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
         # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
-        return "Incident refreshed successfully."
+        return "Error: Not implemented."
 
-    # Handles avalon_add_node action 
+    # Handles avalon_add_node action. This is called for artifacts only 
     @handler("avalon_add_node")
     def _avalon_add_node(self, event, *args, **kwargs):
-        # This function is called with the action message,
-        # In the message we find the whole incident data (and other context)
+        # the user who triggered the action
+        who = event.message["user"]["email"]
+
+        # incident data (and other context)
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
+        # artifact data (and other context)
         artifact = event.message["artifact"]
         logger.info("Called from artifact {}: {}".format(artifact["id"], artifact["value"]))
 
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
-        if artifact["type"] == res.ArtifactType.dns_name:
-            # TODO: Add Avalon node of type "domain"
-            # This is not supported by the Avalon REST API yet
+        try:
+            # Add Avalon node
+            self._add_node(incident, artifact, who)
             return "{} added to Avalon.".format(artifact["value"])
 
-        # We should never get here because the action is shown only for IP and Domain
-        return "Unsupported artifact."
+        except Exception as err:
+            # NOTE: This will still mark the action as complete in IBM Resilient
+            return "Error: {}".format(str(err))
 
-    def _create_workspace(self, incident, who):
+    def _add_node(self, incident, artifact, who):
+        # check whether Avalon workspace has been created for this incident already
+        workspace_artifact = res.incident_get_workspace_artifact(self.rest_client(), incident["id"])
+        if workspace_artifact is None:
+            raise Exception("Please create Avalon workspace for this incident first.")   
+
+        workspace_id = res.get_artifact_property(workspace_artifact, "id")    
+
+        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+        if artifact["type"] == res.ArtifactType.dns_name:
+            data = {
+                "nodes": [ 
+                    { 
+                        "term": artifact["value"],
+                        "type": "domain" 
+                    } 
+                ]
+            }
+
+            resp = av.workspace_add_node(self.api_token, workspace_id, data, logger)
+            (error, msg) = av.check_error(resp, logger)
+            if error:
+                raise IntegrationError(msg)
+
+            return
+
+        # We should never reach this line if action conditions are properly set
+        raise IntegrationError("Unsupported artifact.")
+
+    def _create_empty_workspace(self, incident, who):
         # check whether Avalon workspace has been created for this incident already
         artifact = res.incident_get_workspace_artifact(self.rest_client(), incident["id"])
         if not artifact is None:
@@ -125,7 +154,7 @@ class AvalonActions(ResilientComponent):
             "ShareWithMyOrganization": False
         }
 
-        resp = av.workspace_create(self.api_token, data, logger)
+        resp = av.workspace_create_empty(self.api_token, data, logger)
         (error, msg) = av.check_error(resp, logger)
         if error:
             raise IntegrationError(msg)

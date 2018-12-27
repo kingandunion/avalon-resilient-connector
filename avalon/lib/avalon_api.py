@@ -11,7 +11,15 @@ HEADERS = {
     "Authorization": "Token {}"
 }
 
-def workspace_create(api_token, data, log):
+def workspace_id_from_url(workspace_url):
+    m = re.search(r'workspaces/(?P<graphid>\d+)/$', workspace_url)
+    if m is None:
+        raise IntegrationError("Could not find workspace ID in Avalon response.")
+
+    workspace_id = int(m.group("graphid"))
+    return workspace_id
+
+def workspace_create_empty(api_token, data, log):
     """
     Create a new Avalon workspace
     :param log: logger
@@ -21,7 +29,8 @@ def workspace_create(api_token, data, log):
     """
 
     # url
-    url = "/".join((AVALON_BASE_URL, "graph/new/token"))
+    path = "graph/new/token"
+    url = "/".join((AVALON_BASE_URL, path))
 
     # headers
     headers = _build_headers(api_token)
@@ -34,6 +43,35 @@ def workspace_create(api_token, data, log):
         # resp = requests.get(url, verify=verifyFlag, headers=headers, params=payload)
         # resp = requests.put(url, verify=verifyFlag, headers=headers, data=payload)
 
+        if resp is None:
+            raise IntegrationError("no response returned")
+
+        return resp 
+    except Exception as err:
+        log and log.error(err)
+        raise IntegrationError(err)
+
+def workspace_add_node(api_token, workspace_id, data, log):
+    """
+    Create a new Avalon workspace
+    :param log: logger
+    :param api_token: Avalon API token
+    :param data: Dict with post data. It will be converted to JSON  
+    :return: the responsefrom the Avalon API
+    """
+
+    # url
+    path = "graph/{}/bulkimport/token".format(workspace_id)
+    url = "/".join((AVALON_BASE_URL, path))
+
+    # headers
+    headers = _build_headers(api_token)
+
+    # payload
+    payload = json.dumps(data)
+
+    try:
+        resp = requests.post(url, verify=True, headers=headers, data=payload)
         if resp is None:
             raise IntegrationError("no response returned")
 
@@ -79,11 +117,4 @@ def _build_headers(api_token):
 
     return headers
 
-def workspace_id_from_url(workspace_url):
-    m = re.search(r'workspaces/(?P<graphid>\d+)/$', workspace_url)
-    if m is None:
-        raise IntegrationError("Could not find workspace ID in Avalon response.")
-
-    workspace_id = int(m.group("graphid"))
-    return workspace_id
 
