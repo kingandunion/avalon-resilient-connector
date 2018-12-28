@@ -4,7 +4,7 @@ import requests
 
 from .errors import IntegrationError
 
-AVALON_BASE_URL = "http://localhost:8000/api"
+AVALON_BASE_URL = "http://localhost:8000"
 
 HEADERS = { 
     "Content-Type": "application/json",
@@ -21,7 +21,7 @@ def workspace_id_from_url(workspace_url):
 
 def workspace_create_empty(api_token, data, log):
     """
-    Create a new Avalon workspace
+    Create a new Avalon workspace / graph
     :param log: logger
     :param api_token: Avalon API token
     :param data: Dict with post data. It will be converted to JSON  
@@ -29,7 +29,7 @@ def workspace_create_empty(api_token, data, log):
     """
 
     # url
-    path = "graph/new/token"
+    path = "api/graph/new/token"
     url = "/".join((AVALON_BASE_URL, path))
 
     # headers
@@ -51,17 +51,71 @@ def workspace_create_empty(api_token, data, log):
         log and log.error(err)
         raise IntegrationError(err)
 
-def workspace_add_node(api_token, workspace_id, data, log):
+# TODO: (VK)
+# /api/graph/<id> does not work with API token
+# Update Avaloin API and add /api/graph/<id>/token that works with  API token
+def workspace_get(api_token, workspace_id, log):
     """
-    Create a new Avalon workspace
-    :param log: logger
+    Get Avalon workspace / graph details
     :param api_token: Avalon API token
-    :param data: Dict with post data. It will be converted to JSON  
+    :param workspace_id: Workspace / Graph ID
+    :param log: logger
     :return: the responsefrom the Avalon API
     """
 
     # url
-    path = "graph/{}/bulkimport/token".format(workspace_id)
+    path = "api/graph/{}".format(workspace_id)
+    url = "/".join((AVALON_BASE_URL, path))
+
+    # headers
+    headers = _build_headers(api_token)
+
+    try:
+        resp = requests.get(url, verify=True, headers=headers)
+        if resp is None:
+            raise IntegrationError("no response returned")
+
+        return resp 
+    except Exception as err:
+        log and log.error(err)
+        raise IntegrationError(err)
+
+def workspace_export(workspace_id, workspace_uuid, export_format, log):
+    """
+    Export Avalon workspace / graph 
+    :param workspace_id: Workspace / Graph ID
+    :param workspace_uuid: Workspace / Graph UUID
+    :param export_format: string, one of csv | json | jsonedge | cb-json | stix | stix-json | bro-intel
+    :param log: logger
+    :return: the responsefrom the Avalon API
+    """
+
+    # url
+    path = "export/graph/{}/{}/{}".format(workspace_id, workspace_uuid, export_format)
+    url = "/".join((AVALON_BASE_URL, path))
+
+    try:
+        resp = requests.get(url)
+        if resp is None:
+            raise IntegrationError("no response returned")
+
+        return resp 
+    except Exception as err:
+        log and log.error(err)
+        raise IntegrationError(err)
+
+def workspace_add_node(api_token, workspace_id, data, log):
+    """
+    Create a new Avalon workspace
+    :param api_token: Avalon API token
+    :param workspace_id: Workspace / Graph ID
+    :param data: Dict with post data. It will be converted to JSON  
+    :param log: logger
+    :return: the responsefrom the Avalon API
+    """
+
+    # url
+    path = "api/graph/{}/bulkimport/token".format(workspace_id)
     url = "/".join((AVALON_BASE_URL, path))
 
     # headers

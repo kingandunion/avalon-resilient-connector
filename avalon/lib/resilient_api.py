@@ -54,10 +54,17 @@ def incident_add_workspace_artifact(rest_client, incident_id, title, description
     new_artifact_uri = "/incidents/{}/artifacts".format(incident_id)
     rest_client.post(new_artifact_uri, new_artifact)
 
-def incident_get_workspace_artifact(rest_client, incident_id):
+
+def incident_get_artifacts(rest_client, incident_id):
     # get all artifacts for this incident
     artifact_uri = "/incidents/{}/artifacts".format(incident_id)
     artifacts = rest_client.get(artifact_uri)
+    return artifacts
+
+
+def incident_get_workspace_artifact(rest_client, incident_id):
+    # get all artifacts for this incident
+    artifacts = incident_get_artifacts(rest_client, incident_id)
 
     # Tthe workspace artifact should have a property "type" set to "avalon_workspace" 
     for artifact in artifacts:
@@ -66,7 +73,8 @@ def incident_get_workspace_artifact(rest_client, incident_id):
             return artifact
 
     return None
-         
+
+
 def get_artifact_property(artifact, name):
     properties = artifact["properties"]
     if properties is None:

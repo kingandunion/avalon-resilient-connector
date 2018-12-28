@@ -14,6 +14,12 @@ logger = logging.getLogger(__name__)
 class AvalonActions(ResilientComponent):
     # Subscribe to the message destination named "avalon_actions"
     channel = "actions.avalon_actions"
+
+    # maps Avalon Graph Node type to IBM Resilient Incident Artifact type
+    node_artifact_type = {
+        "ip": 1,
+        "domain" : 2
+    } 
     
     def __init__(self, opts):
         """constructor provides access to the configuration options"""
@@ -36,6 +42,7 @@ class AvalonActions(ResilientComponent):
         res.validate_fields(["api_token"], self.options)
 
         self.api_token = self.options["api_token"]
+
 
     # Handles avalon_create_workspace action 
     @handler("avalon_create_workspace")
@@ -76,14 +83,61 @@ class AvalonActions(ResilientComponent):
             # NOTE: This will still mark the action as complete in IBM Resilient
             return "Error: {}".format(str(err))
 
-    # Handles avalon_refresh action 
+
+    # Handles the avalon_refresh action 
     @handler("avalon_refresh")
     def _avalon_refresh(self, event, *args, **kwargs):
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
-        return "Error: Not implemented."
+        try:
+            # TODO: Call to get workspace / graph object. We need the graph UUID
+            # resp = av.workspace_get(self.api_token, 47, logger)
+
+            # export the nodes from the Avalon workspace 
+            resp = av.workspace_export(47, "5621b79a-9bc2-4d4a-bcbc-a605a5e320da", "json", logger)
+            (error, msg) = av.check_error(resp, logger)
+            if error:
+                raise IntegrationError(msg)
+
+            result = resp.json()
+            nodes = result["data"]
+            if nodes is None:
+                return "Avalon workspace does not contains any nodes."
+
+            # import the nodes into the IBM resilient incident
+            self._import_avalon_nodes(incident, nodes)
+
+            # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+            return "Successfully refreshed all artifacts from Avalon."
+        except Exception as err:
+            # NOTE: This will still mark the action as complete in IBM Resilient
+            return "Error: {}".format(str(err))
+
+    # matches nodes to artifacts by type and value 
+    # and adds the nodes that are new  
+    def _import_avalon_nodes(self, incident, nodes):
+        artifacts = res.incident_get_artifacts(self.rest_client(), incident["id"])
+        for node in nodes:
+            node_value = node[0]
+            node_type = node[1]
+
+            # check whether it is a supported artifact            
+            artifact_type = self.node_artifact_type.get(node_type)  
+            if artifact_type is None:
+                continue
+
+            # check whether artifact with the same type and value already exists 
+            matching_artifacts = [
+                a for a in artifacts 
+                if a["type"] == artifact_type and a["value"] == node_value
+            ]
+
+            if len(matching_artifacts) > 0:
+                continue
+
+            # TODO: create artifact
+
 
     # Handles avalon_add_node action. This is called for artifacts only 
     @handler("avalon_add_node")
@@ -103,10 +157,10 @@ class AvalonActions(ResilientComponent):
             # Add Avalon node
             self._add_node(incident, artifact, who)
             return "{} added to Avalon.".format(artifact["value"])
-
         except Exception as err:
             # NOTE: This will still mark the action as complete in IBM Resilient
             return "Error: {}".format(str(err))
+
 
     def _add_node(self, incident, artifact, who):
         # check whether Avalon workspace has been created for this incident already
@@ -136,6 +190,7 @@ class AvalonActions(ResilientComponent):
 
         # We should never reach this line if action conditions are properly set
         raise IntegrationError("Unsupported artifact.")
+
 
     def _create_empty_workspace(self, incident, who):
         # check whether Avalon workspace has been created for this incident already
@@ -172,7 +227,6 @@ class AvalonActions(ResilientComponent):
                                                 incident["id"], 
                                                 artifact_title, artifact_description, 
                                                 workspace_id, workspace_url)
-
 
 
 
