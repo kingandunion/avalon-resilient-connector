@@ -54,6 +54,19 @@ def incident_add_workspace_artifact(rest_client, incident_id, title, description
     new_artifact_uri = "/incidents/{}/artifacts".format(incident_id)
     rest_client.post(new_artifact_uri, new_artifact)
 
+def incident_add_artifact(rest_client, incident_id, art_type, art_value, art_desc):
+    new_artifact = {
+        "type": art_type,
+        "value": art_value,
+        "description": {
+            "format" : "text", 
+            "content" : art_desc
+        }
+    }
+
+    new_artifact_uri = "/incidents/{}/artifacts".format(incident_id)
+    rest_client.post(new_artifact_uri, new_artifact)
+
 
 def incident_get_artifacts(rest_client, incident_id):
     # get all artifacts for this incident

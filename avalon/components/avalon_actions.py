@@ -17,8 +17,8 @@ class AvalonActions(ResilientComponent):
 
     # maps Avalon Graph Node type to IBM Resilient Incident Artifact type
     node_artifact_type = {
-        "ip": 1,
-        "domain" : 2
+        "ip": res.ArtifactType.ip_address,
+        "domain" : res.ArtifactType.dns_name
     } 
     
     def __init__(self, opts):
@@ -85,8 +85,8 @@ class AvalonActions(ResilientComponent):
 
 
     # Handles the avalon_refresh action 
-    @handler("avalon_refresh")
-    def _avalon_refresh(self, event, *args, **kwargs):
+    @handler("avalon_import_nodes")
+    def _avalon_import_nodes(self, event, *args, **kwargs):
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
@@ -117,27 +117,30 @@ class AvalonActions(ResilientComponent):
     # matches nodes to artifacts by type and value 
     # and adds the nodes that are new  
     def _import_avalon_nodes(self, incident, nodes):
-        artifacts = res.incident_get_artifacts(self.rest_client(), incident["id"])
+        incident_id = incident["id"]
+        artifacts = res.incident_get_artifacts(self.rest_client(), incident_id)
         for node in nodes:
             node_value = node[0]
             node_type = node[1]
 
             # check whether it is a supported artifact            
-            artifact_type = self.node_artifact_type.get(node_type)  
+            artifact_type = self.node_artifact_type.get(node_type)
             if artifact_type is None:
                 continue
 
             # check whether artifact with the same type and value already exists 
+            artifact_value = node_value   
             matching_artifacts = [
                 a for a in artifacts 
-                if a["type"] == artifact_type and a["value"] == node_value
+                if a["type"] == artifact_type and a["value"] == artifact_value
             ]
 
             if len(matching_artifacts) > 0:
                 continue
 
-            # TODO: create artifact
-
+            # add new artifact to incident
+            artifact_description = "Created from Avalon workspace node."
+            res.incident_add_artifact(self.rest_client(), incident_id, artifact_type, artifact_value, artifact_description)
 
     # Handles avalon_add_node action. This is called for artifacts only 
     @handler("avalon_add_node")
