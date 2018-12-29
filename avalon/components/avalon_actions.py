@@ -91,11 +91,29 @@ class AvalonActions(ResilientComponent):
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
         try:
-            # TODO: Call to get workspace / graph object. We need the graph UUID
-            # resp = av.workspace_get(self.api_token, 47, logger)
+            incident_id = incident["id"]
+            artifacts = res.incident_get_artifacts(self.rest_client(), incident_id)
+            workspace_artifact = res.incident_get_workspace_artifact(self.rest_client(), incident_id, artifacts)
+
+            if not workspace_artifact:
+                raise Exception("Please create Avalon workspace for this incident first.")   
+
+            # get workspace ID
+            workspace_id = res.get_artifact_property(workspace_artifact, "id")    
+
+            # Call to get workspace / graph object. We need the graph UUID
+            resp = av.workspace_get(self.api_token, workspace_id, logger)
+            (error, msg) = av.check_error(resp, logger)
+            if error:
+                raise IntegrationError(msg)
+
+            result = resp.json()
+
+            # get UUID
+            workspace_uuid = result["data"]["attributes"]["UUID"]
 
             # export the nodes from the Avalon workspace 
-            resp = av.workspace_export(47, "5621b79a-9bc2-4d4a-bcbc-a605a5e320da", "json", logger)
+            resp = av.workspace_export(workspace_id, workspace_uuid, "json", logger)
             (error, msg) = av.check_error(resp, logger)
             if error:
                 raise IntegrationError(msg)
@@ -106,7 +124,7 @@ class AvalonActions(ResilientComponent):
                 return "Avalon workspace does not contains any nodes."
 
             # import the nodes into the IBM resilient incident
-            self._import_avalon_nodes(incident, nodes)
+            self._import_avalon_nodes(incident_id, artifacts, nodes)
 
             # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
             return "Successfully refreshed all artifacts from Avalon."
@@ -116,9 +134,7 @@ class AvalonActions(ResilientComponent):
 
     # matches nodes to artifacts by type and value 
     # and adds the nodes that are new  
-    def _import_avalon_nodes(self, incident, nodes):
-        incident_id = incident["id"]
-        artifacts = res.incident_get_artifacts(self.rest_client(), incident_id)
+    def _import_avalon_nodes(self, incident_id, artifacts, nodes):
         for node in nodes:
             node_value = node[0]
             node_type = node[1]
@@ -168,7 +184,7 @@ class AvalonActions(ResilientComponent):
     def _add_node(self, incident, artifact, who):
         # check whether Avalon workspace has been created for this incident already
         workspace_artifact = res.incident_get_workspace_artifact(self.rest_client(), incident["id"])
-        if workspace_artifact is None:
+        if not workspace_artifact:
             raise Exception("Please create Avalon workspace for this incident first.")   
 
         workspace_id = res.get_artifact_property(workspace_artifact, "id")    

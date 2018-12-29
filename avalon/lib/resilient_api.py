@@ -75,9 +75,10 @@ def incident_get_artifacts(rest_client, incident_id):
     return artifacts
 
 
-def incident_get_workspace_artifact(rest_client, incident_id):
+def incident_get_workspace_artifact(rest_client, incident_id, artifacts=None):
     # get all artifacts for this incident
-    artifacts = incident_get_artifacts(rest_client, incident_id)
+    if not artifacts:
+        artifacts = incident_get_artifacts(rest_client, incident_id)
 
     # Tthe workspace artifact should have a property "type" set to "avalon_workspace" 
     for artifact in artifacts:

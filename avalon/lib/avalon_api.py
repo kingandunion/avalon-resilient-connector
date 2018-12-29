@@ -64,7 +64,7 @@ def workspace_get(api_token, workspace_id, log):
     """
 
     # url
-    path = "api/graph/{}".format(workspace_id)
+    path = "api/graph/{}/token".format(workspace_id)
     url = "/".join((AVALON_BASE_URL, path))
 
     # headers
