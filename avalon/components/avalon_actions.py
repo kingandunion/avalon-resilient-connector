@@ -84,9 +84,9 @@ class AvalonActions(ResilientComponent):
             return "Error: {}".format(str(err))
 
 
-    # Handles the avalon_refresh action 
-    @handler("avalon_import_nodes")
-    def _avalon_import_nodes(self, event, *args, **kwargs):
+    # Handles the avalon_pull_workspace_nodes action 
+    @handler("avalon_pull_workspace_nodes")
+    def _avalon_pull_workspace_nodes(self, event, *args, **kwargs):
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
@@ -161,9 +161,6 @@ class AvalonActions(ResilientComponent):
     # Handles avalon_add_node action. This is called for artifacts only 
     @handler("avalon_add_node")
     def _avalon_add_node(self, event, *args, **kwargs):
-        # the user who triggered the action
-        who = event.message["user"]["email"]
-
         # incident data (and other context)
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
@@ -174,22 +171,26 @@ class AvalonActions(ResilientComponent):
 
         try:
             # Add Avalon node
-            self._add_node(incident, artifact, who)
+            self._add_node(incident, artifact)
             return "{} added to Avalon.".format(artifact["value"])
         except Exception as err:
             # NOTE: This will still mark the action as complete in IBM Resilient
             return "Error: {}".format(str(err))
 
 
-    def _add_node(self, incident, artifact, who):
+    def _add_node(self, incident, artifact):
         # check whether Avalon workspace has been created for this incident already
         workspace_artifact = res.incident_get_workspace_artifact(self.rest_client(), incident["id"])
         if not workspace_artifact:
             raise Exception("Please create Avalon workspace for this incident first.")   
 
+        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
         workspace_id = res.get_artifact_property(workspace_artifact, "id")    
 
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+        # Call to get workspace / graph object. We need the graph UUID
+        if self._check_for_existing_node(workspace_id, artifact):
+            raise Exception("Could not add Avalon node. A node with value {} already exists.".format(artifact["value"]))
+
         if artifact["type"] == res.ArtifactType.dns_name:
             data = {
                 "nodes": [ 
@@ -209,6 +210,46 @@ class AvalonActions(ResilientComponent):
 
         # We should never reach this line if action conditions are properly set
         raise IntegrationError("Unsupported artifact.")
+
+    def _check_for_existing_node(self, workspace_id, artifact):
+        # check whether node with the same type and value already exists in the workspace
+
+        # Call to get workspace / graph object. We need the graph UUID
+        resp = av.workspace_get(self.api_token, workspace_id, logger)
+        (error, msg) = av.check_error(resp, logger)
+        if error:
+            raise IntegrationError(msg)
+
+        result = resp.json()
+
+        # get UUID
+        workspace_uuid = result["data"]["attributes"]["UUID"]
+
+        # export the nodes from the Avalon workspace 
+        resp = av.workspace_export(workspace_id, workspace_uuid, "json", logger)
+        (error, msg) = av.check_error(resp, logger)
+        if error:
+            raise IntegrationError(msg)
+
+        result = resp.json()
+        nodes = result["data"]
+        if not nodes:
+            return False
+
+        for node in nodes:
+            node_value = node[0]
+            node_type = node[1]
+
+            artifact_value = node_value                      
+
+            artifact_type = self.node_artifact_type.get(node_type)
+            if not artifact_type:
+                continue
+
+            if artifact["type"] == artifact_type and artifact["value"] == artifact_value:
+                return True
+
+        return False
 
 
     def _create_empty_workspace(self, incident, who):

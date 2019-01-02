@@ -104,6 +104,7 @@ def workspace_export(workspace_id, workspace_uuid, export_format, log):
         log and log.error(err)
         raise IntegrationError(err)
 
+
 def workspace_add_node(api_token, workspace_id, data, log):
     """
     Create a new Avalon workspace
