@@ -6,7 +6,7 @@ from circuits.core.handlers import handler
 from resilient_circuits.actions_component import ResilientComponent, ActionMessage, StatusMessage
 
 from avalon.lib import resilient_api as res
-from avalon.lib.errors import IntegrationError, WorkspaceExistsError
+from avalon.lib.errors import IntegrationError, WorkspaceLinkError
 from avalon.lib import avalon_api as av
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,8 @@ class AvalonActions(ResilientComponent):
     # Handles avalon_create_workspace action 
     @handler("avalon_create_workspace")
     def _avalon_create_workspace(self, event, *args, **kwargs):
+        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+
         # the user who triggered the action
         who = event.message["user"]["email"]
 
@@ -64,10 +66,8 @@ class AvalonActions(ResilientComponent):
         try:
             # create Avalon workspace
             self._create_empty_workspace(incident, who)
-
-            # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
             return "Avalon workspace created successfully."
-        except WorkspaceExistsError:
+        except WorkspaceLinkError:
             return "Avalon workspace already exists for this incident."
         except Exception as err:
             # TODO: Find out how we can return errors from custom action handlers    
@@ -84,22 +84,60 @@ class AvalonActions(ResilientComponent):
             return "Error: {}".format(str(err))
 
 
+    def _create_empty_workspace(self, incident, who):
+        # check whether Avalon workspace has been created for this incident already
+        if incident["properties"]["avalon_workspace_id"]:
+            raise WorkspaceLinkError("Already linked to Avalon Workspace ID: {}.".format(incident["avalon_workspace_id"]))   
+
+        workspace_title = "{} (IBM Resilient)".format(incident["name"])
+        workspace_summary = "Created from IBM Resilient by {}. IBM Resilient Incident ID: {}".format(who, incident["id"])
+        
+        data = {
+            "Title": workspace_title, 
+            "Summary": workspace_summary, 
+            "TLP": "r", 
+            "ShareWithMyOrganization": False
+        }
+
+        resp = av.workspace_create_empty(self.api_token, data, logger)
+        (error, msg) = av.check_error(resp, logger)
+        if error:
+            raise IntegrationError(msg)
+
+        # workspace data looks like: {"data": {"path": "https://example.com...aces/22/ "}}
+        result = resp.json()
+        workspace_data = result["data"]
+        workspace_url = workspace_data["path"].strip() 
+        workspace_id = av.workspace_id_from_url(workspace_url)
+
+        # Set the workspace id field
+        res.incident_set_avalon_workspace_id(self.rest_client(), incident["id"], workspace_id)
+
+        # Add a new artifact to the incident
+        artifact_title = "Avalon Workspace"
+        artifact_description = "Avalon workspace address: {}".format(workspace_url)
+        res.incident_add_workspace_artifact(self.rest_client(), 
+                                                incident["id"], 
+                                                artifact_title, artifact_description, 
+                                                workspace_id, workspace_url)
+
+
     # Handles the avalon_pull_workspace_nodes action 
     @handler("avalon_pull_workspace_nodes")
     def _avalon_pull_workspace_nodes(self, event, *args, **kwargs):
+        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
         try:
             incident_id = incident["id"]
             artifacts = res.incident_get_artifacts(self.rest_client(), incident_id)
-            workspace_artifact = res.incident_get_workspace_artifact(self.rest_client(), incident_id, artifacts)
-
-            if not workspace_artifact:
-                raise Exception("Please create Avalon workspace for this incident first.")   
 
             # get workspace ID
-            workspace_id = res.get_artifact_property(workspace_artifact, "id")    
+            workspace_id = incident["properties"].get("avalon_workspace_id", None)
+            if not workspace_id:
+                raise Exception("Please create Avalon workspace for this incident first.") 
 
             # Call to get workspace / graph object. We need the graph UUID
             resp = av.workspace_get(self.api_token, workspace_id, logger)
@@ -179,13 +217,10 @@ class AvalonActions(ResilientComponent):
 
 
     def _add_node(self, incident, artifact):
-        # check whether Avalon workspace has been created for this incident already
-        workspace_artifact = res.incident_get_workspace_artifact(self.rest_client(), incident["id"])
-        if not workspace_artifact:
-            raise Exception("Please create Avalon workspace for this incident first.")   
-
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
-        workspace_id = res.get_artifact_property(workspace_artifact, "id")    
+        # get workspace ID
+        workspace_id = incident["properties"].get("avalon_workspace_id", None)
+        if not workspace_id:
+            raise Exception("Please create Avalon workspace for this incident first.") 
 
         # Call to get workspace / graph object. We need the graph UUID
         if self._check_for_existing_node(workspace_id, artifact):
@@ -252,41 +287,7 @@ class AvalonActions(ResilientComponent):
         return False
 
 
-    def _create_empty_workspace(self, incident, who):
-        # check whether Avalon workspace has been created for this incident already
-        artifact = res.incident_get_workspace_artifact(self.rest_client(), incident["id"])
-        if not artifact is None:
-            existing_workspace_url = res.get_artifact_property(artifact, "url")
-            raise WorkspaceExistsError(existing_workspace_url)   
 
-        workspace_title = "{} (IBM Resilient)".format(incident["name"])
-        workspace_summary = "Created from IBM Resilient by {}. IBM Resilient Incident ID: {}".format(who, incident["id"])
-        
-        data = {
-            "Title": workspace_title, 
-            "Summary": workspace_summary, 
-            "TLP": "r", 
-            "ShareWithMyOrganization": False
-        }
-
-        resp = av.workspace_create_empty(self.api_token, data, logger)
-        (error, msg) = av.check_error(resp, logger)
-        if error:
-            raise IntegrationError(msg)
-
-        # workspace data looks like: {"data": {"path": "https://example.com...aces/22/ "}}
-        result = resp.json()
-        workspace_data = result["data"]
-        workspace_url = workspace_data["path"].strip() 
-        workspace_id = av.workspace_id_from_url(workspace_url)
-
-        # Add a new artifact to the incident, using the provided REST API client
-        artifact_title = "Avalon Workspace"
-        artifact_description = "Avalon workspace address: {}".format(workspace_url)
-        res.incident_add_workspace_artifact(self.rest_client(), 
-                                                incident["id"], 
-                                                artifact_title, artifact_description, 
-                                                workspace_id, workspace_url)
 
 
 

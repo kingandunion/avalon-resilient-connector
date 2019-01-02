@@ -54,6 +54,25 @@ def incident_add_workspace_artifact(rest_client, incident_id, title, description
     new_artifact_uri = "/incidents/{}/artifacts".format(incident_id)
     rest_client.post(new_artifact_uri, new_artifact)
 
+def incident_set_avalon_workspace_id(rest_client, incident_id, avalon_workspace_id):
+    patch_data =  {
+        "changes": [
+            {
+            "field": {
+                "name": "avalon_workspace_id"
+            },
+            "old_value": {},
+            "new_value": avalon_workspace_id
+            }
+        ],
+        "version": 0
+    }        
+ 
+    incident_patch_uri = "/incidents/{}".format(incident_id)
+    resp = rest_client.patch(incident_patch_uri, patch_data)
+    return resp
+
+
 def incident_add_artifact(rest_client, incident_id, art_type, art_value, art_desc):
     new_artifact = {
         "type": art_type,

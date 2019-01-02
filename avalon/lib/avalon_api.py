@@ -150,6 +150,9 @@ def check_error(resp, log):
     #       ]
     #   }
 
+    if resp.status_code == 500:
+        raise IntegrationError(resp.text)
+
     if resp.status_code >= 300:
         result = resp.json()
         if "errors" in result:
