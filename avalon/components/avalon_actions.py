@@ -12,14 +12,15 @@ from avalon.lib import avalon_api as av
 logger = logging.getLogger(__name__)
 
 # maps Avalon Node type to IBM Resilient Artifact type
+# only the types that directly correspond to one another are mapped
 node_to_artifact_type = dict(
     ip = res.ArtifactType.ip_address,
     domain = res.ArtifactType.dns_name,
     url = res.ArtifactType.url,
-    email = res.ArtifactType.email_sender,
 )
 
 # maps IBM Resilient Artifact type to Avalon Node type
+# the reverse map of node_to_artifact_type above
 artifact_to_node_type = dict(reversed(item) for item in node_to_artifact_type.items())
 
 class AvalonActions(ResilientComponent):
@@ -292,14 +293,14 @@ class AvalonActions(ResilientComponent):
 
 
     def _add_workspace_node(self, artifact, workspace_id):
-        if artifact["type"] != res.ArtifactType.dns_name:
+        if artifact["type"] not in artifact_to_node_type:
             return False    
 
         data = {
             "nodes": [ 
                 { 
                     "term": artifact["value"],
-                    "type": "domain" 
+                    "type": artifact_to_node_type.get(artifact["type"]) 
                 } 
             ]
         }
