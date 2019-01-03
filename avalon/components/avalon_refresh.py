@@ -23,7 +23,9 @@ class AvalonRefreshFunction(ResilientComponent):
 
     @function("avalon_refresh")
     def _avalon_refresh_function(self, event, *args, **kwargs):
-        """Function: Pulls data from a linked Avalon workspace. Requires an Avalon Workspace artifact to be present in the incident. Avalon Workspace artifact can be created with the "Avalon: Create Workspace" custom menu command."""
+        """Function: Pulls data from a linked Avalon workspace. 
+        Requires an Avalon Workspace artifact to be present in the incident. 
+        Avalon Workspace artifact can be created with the "Avalon: Create Workspace" custom menu command."""
         try:
             # Get the function parameters:
 

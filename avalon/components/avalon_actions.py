@@ -7,7 +7,7 @@ from resilient_circuits.actions_component import ResilientComponent, ActionMessa
 
 from avalon.lib import resilient_api as res
 from avalon.lib.errors import IntegrationError, WorkspaceLinkError
-from avalon.lib import avalon_api as av
+from avalon.lib.avalon_api import Avalon
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +34,9 @@ class AvalonActions(ResilientComponent):
         self.res_options = opts.get("resilient", {})
 
         self.options = opts.get("avalon", {})
-        res.validate_fields(["api_token"], self.options)
+        res.validate_fields(["base_url", "api_token"], self.options)
 
-        self.api_token = self.options["api_token"]
+        self.av = Avalon(self.options)
 
 
     @handler("reload")
@@ -45,9 +45,9 @@ class AvalonActions(ResilientComponent):
         self.res_options = opts.get("resilient", {})
         
         self.options = opts.get("avalon", {})
-        res.validate_fields(["api_token"], self.options)
+        res.validate_fields(["base_url", "api_token"], self.options)
 
-        self.api_token = self.options["api_token"]
+        self.av.reload(self.options)
 
 
     # Handles Avalon: Create Workspace action 
@@ -127,8 +127,8 @@ class AvalonActions(ResilientComponent):
             "ShareWithMyOrganization": False
         }
 
-        resp = av.workspace_create_empty(self.api_token, data, logger)
-        (error, msg) = av.check_error(resp, logger)
+        resp = self.av.workspace_create(data, logger)
+        (error, msg) = Avalon.check_error(resp, logger)
         if error:
             raise IntegrationError(msg)
 
@@ -136,7 +136,7 @@ class AvalonActions(ResilientComponent):
         result = resp.json()
         workspace_data = result["data"]
         workspace_url = workspace_data["path"].strip() 
-        workspace_id = av.workspace_id_from_url(workspace_url)
+        workspace_id = self.av.workspace_id_from_url(workspace_url)
 
         # Set the workspace id field
         res.incident_set_avalon_workspace_id(self.rest_client(), incident["id"], workspace_id)
@@ -305,8 +305,8 @@ class AvalonActions(ResilientComponent):
             ]
         }
 
-        resp = av.workspace_add_node(self.api_token, workspace_id, data, logger)
-        (error, msg) = av.check_error(resp, logger)
+        resp = self.av.workspace_add_node(workspace_id, data, logger)
+        (error, msg) = Avalon.check_error(resp, logger)
         if error:
             raise IntegrationError(msg)
 
@@ -336,8 +336,8 @@ class AvalonActions(ResilientComponent):
 
     def _get_avalon_workspace_uuid(self, workspace_id):
         # Call to get workspace / graph object. We need the graph UUID
-        resp = av.workspace_get(self.api_token, workspace_id, logger)
-        (error, msg) = av.check_error(resp, logger)
+        resp = self.av.workspace_get(workspace_id, logger)
+        (error, msg) = Avalon.check_error(resp, logger)
         if error:
             raise IntegrationError(msg)
 
@@ -349,8 +349,8 @@ class AvalonActions(ResilientComponent):
 
     def _get_avalon_workspace_nodes(self, workspace_id, workspace_uuid):
         # export the nodes from the Avalon workspace 
-        resp = av.workspace_export(workspace_id, workspace_uuid, "json", logger)
-        (error, msg) = av.check_error(resp, logger)
+        resp = self.av.workspace_export(workspace_id, workspace_uuid, "json", logger)
+        (error, msg) = Avalon.check_error(resp, logger)
         if error:
             raise IntegrationError(msg)
 

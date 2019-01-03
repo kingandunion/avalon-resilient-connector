@@ -10,7 +10,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler())
 
-
+# TODO: VK
+# Add "ping/token" endpoint to Avalon API that responds with status: 200
+# call the endpoint here to verify Avalon API connectivity  
 def selftest_function(opts):
     """
     Placeholder for selftest function. An example use would be to test package api connectivity.

@@ -60,6 +60,7 @@ pip install fn_avalon<version>.tar.gz
 	
 	```
 	[avalon]
-	avalon_api_token=<avalon-api-token>
+	base_url=<avalon-base-url>
+	api_token=<avalon-api-token>
 	```
 
