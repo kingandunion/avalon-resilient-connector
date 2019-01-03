@@ -102,7 +102,7 @@ def incident_get_workspace_artifact(rest_client, incident_id, artifacts=None):
     # Tthe workspace artifact should have a property "type" set to "avalon_workspace" 
     for artifact in artifacts:
         artifact_type = get_artifact_property(artifact, "type")
-        if not artifact_type is None and artifact_type == "avalon_workspace":
+        if artifact_type and artifact_type == "avalon_workspace":
             return artifact
 
     return None
