@@ -34,7 +34,7 @@ class AvalonActions(ResilientComponent):
 
 
     @handler("reload")
-    def _reload(self, event, opts):
+    def handle_reload(self, event, opts):
         """Configuration options have changed, save new values"""
         self.res_options = opts.get("resilient", {})
         
@@ -44,8 +44,31 @@ class AvalonActions(ResilientComponent):
         self.api_token = self.options["api_token"]
 
 
-    # Handles avalon_create_workspace action 
+    # Handles Avalon: Create Workspace action 
     @handler("avalon_create_workspace")
+    def handle_avalon_create_workspace(self, event, *args, **kwargs):
+        return self._avalon_create_workspace(event, args, kwargs)
+
+
+    # Handles "Avalon: Pull All Nodes" action 
+    @handler("avalon_pull_all_nodes")
+    def handle_avalon_pull_nodes(self, event, *args, **kwargs):
+        return self._avalon_pull_all_nodes(event, args, kwargs)
+
+
+    # Handles "Avalon: Push All Artifacts" action. This is called for artifacts only 
+    @handler("avalon_push_all_artifacts")
+    def handle_avalon_push_all_artifact(self, event, *args, **kwargs):
+        # return self._avalon_push_artifact(event, args, kwargs)
+        return "Not implemented"
+
+
+    # Handles "Avalon: Push Artifact" action. This is called for artifacts only 
+    @handler("avalon_push_artifact")
+    def handle_avalon_push_artifact(self, event, *args, **kwargs):
+        return self._avalon_push_artifact(event, args, kwargs)
+
+
     def _avalon_create_workspace(self, event, *args, **kwargs):
         # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
 
@@ -65,7 +88,7 @@ class AvalonActions(ResilientComponent):
 
         try:
             # create Avalon workspace
-            self._create_empty_workspace(incident, who)
+            self._create_workspace(incident, who)
             return "Avalon workspace created successfully."
         except WorkspaceLinkError:
             return "Avalon workspace already exists for this incident."
@@ -84,7 +107,7 @@ class AvalonActions(ResilientComponent):
             return "Error: {}".format(str(err))
 
 
-    def _create_empty_workspace(self, incident, who):
+    def _create_workspace(self, incident, who):
         # check whether Avalon workspace has been created for this incident already
         if incident["properties"]["avalon_workspace_id"]:
             raise WorkspaceLinkError("Already linked to Avalon Workspace ID: {}.".format(incident["avalon_workspace_id"]))   
@@ -122,9 +145,7 @@ class AvalonActions(ResilientComponent):
                                                 workspace_id, workspace_url)
 
 
-    # Handles the avalon_pull_workspace_nodes action 
-    @handler("avalon_pull_workspace_nodes")
-    def _avalon_pull_workspace_nodes(self, event, *args, **kwargs):
+    def _avalon_pull_all_nodes(self, event, *args, **kwargs):
         # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
 
         incident = event.message["incident"]
@@ -170,6 +191,7 @@ class AvalonActions(ResilientComponent):
             # NOTE: This will still mark the action as complete in IBM Resilient
             return "Error: {}".format(str(err))
 
+
     # matches nodes to artifacts by type and value 
     # and adds the nodes that are new  
     def _import_avalon_nodes(self, incident_id, artifacts, nodes):
@@ -196,9 +218,8 @@ class AvalonActions(ResilientComponent):
             artifact_description = "Created from Avalon workspace node."
             res.incident_add_artifact(self.rest_client(), incident_id, artifact_type, artifact_value, artifact_description)
 
-    # Handles avalon_add_node action. This is called for artifacts only 
-    @handler("avalon_add_node")
-    def _avalon_add_node(self, event, *args, **kwargs):
+
+    def _avalon_push_artifact(self, event, *args, **kwargs):
         # incident data (and other context)
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
@@ -245,6 +266,7 @@ class AvalonActions(ResilientComponent):
 
         # We should never reach this line if action conditions are properly set
         raise IntegrationError("Unsupported artifact.")
+
 
     def _check_for_existing_node(self, workspace_id, artifact):
         # check whether node with the same type and value already exists in the workspace
