@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 # maps Avalon Node type to IBM Resilient Artifact type
 node_to_artifact_type = dict(
     ip = res.ArtifactType.ip_address,
-    domain = res.ArtifactType.dns_name
+    domain = res.ArtifactType.dns_name,
+    url = res.ArtifactType.url,
+    email = res.ArtifactType.email_sender,
 )
 
 # maps IBM Resilient Artifact type to Avalon Node type
