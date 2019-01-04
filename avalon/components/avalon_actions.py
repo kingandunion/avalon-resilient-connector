@@ -4,7 +4,7 @@ import logging
 from circuits.core.handlers import handler
 from resilient_circuits.actions_component import ResilientComponent, ActionMessage, StatusMessage
 
-from actions import Actions
+from .actions import Actions
 
 logger = logging.getLogger(__name__)
 

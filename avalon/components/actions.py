@@ -1,3 +1,5 @@
+import threading
+
 from avalon.lib.errors import IntegrationError, WorkspaceLinkError
 from avalon.lib.avalon_api import Avalon
 from avalon.lib.resilient_api import Resilient, ArtifactType
@@ -13,6 +15,12 @@ node_to_artifact_type = dict(
 # maps IBM Resilient Artifact type to Avalon Node type
 # the reverse map of node_to_artifact_type above
 artifact_to_node_type = dict(reversed(item) for item in node_to_artifact_type.items())
+
+# node pulls should not overlap 
+pull_lock = threading.Lock()
+
+# arttifact pushes should not overlap 
+push_lock = threading.Lock()
 
 class Actions:
     def __init__(self, avalon_base_url, avalon_api_token, resilient_rest_client, logger):
@@ -45,100 +53,102 @@ class Actions:
             # NOTE: This will still mark the action as complete in IBM Resilient
             return "Error: {}".format(str(err))
 
-
     # Pulls all nodes from an Avalon Workspace to Resilient Incident artifacts 
     # The Avalon Workspace must be linked to the Resilient Incident first
     def pull_avalon_nodes(self, incident):
-        try:
-            incident_id = incident["id"]
-            artifacts = self.res.incident_get_artifacts(incident_id)
+        with pull_lock:
+            try:
+                incident_id = incident["id"]
+                artifacts = self.res.incident_get_artifacts(incident_id)
 
-            # get workspace ID
-            workspace_id = incident["properties"].get("avalon_workspace_id", None)
-            if not workspace_id:
-                raise Exception("Please create Avalon workspace for this incident first.") 
+                # get workspace ID
+                workspace_id = incident["properties"].get("avalon_workspace_id", None)
+                if not workspace_id:
+                    raise Exception("Please create Avalon workspace for this incident first.") 
 
-            # Call to get workspace / graph object. We need the graph UUID
-            workspace_uuid = self._get_avalon_workspace_uuid(workspace_id)
+                # Call to get workspace / graph object. We need the graph UUID
+                workspace_uuid = self._get_avalon_workspace_uuid(workspace_id)
 
-            # Get all avalon nodes
-            nodes = self._get_all_avalon_nodes(workspace_id, workspace_uuid)
-            if nodes is None:
-                return "Avalon workspace does not contains any nodes."
+                # Get all avalon nodes
+                nodes = self._get_all_avalon_nodes(workspace_id, workspace_uuid)
+                if nodes is None:
+                    return "Avalon workspace does not contains any nodes."
 
-            # import the nodes into the IBM resilient incident
-            self._create_resilient_artifacts(incident_id, artifacts, nodes)
+                # import the nodes into the IBM resilient incident
+                self._create_resilient_artifacts(incident_id, artifacts, nodes)
 
-            return "Successfully pulled all nodes from Avalon."
-        except Exception as err:
-            # NOTE: This will still mark the action as complete in IBM Resilient
-            return "Error: {}".format(str(err))
+                return "Successfully pulled all nodes from Avalon."
+            except Exception as err:
+                # NOTE: This will still mark the action as complete in IBM Resilient
+                return "Error: {}".format(str(err))
 
     # Pushes all artifacts from a Resilient Incident to Avalon Workspace nodes 
     # The Avalon Workspace must be linked to the Resilient Incident first
     def push_resilient_artifacts(self, incident):
-        try:
-            incident_id = incident["id"]
-            artifacts = self.res.incident_get_artifacts(incident_id)
+        with push_lock:
+            try:
+                incident_id = incident["id"]
+                artifacts = self.res.incident_get_artifacts(incident_id)
 
-            # get workspace ID
-            workspace_id = incident["properties"].get("avalon_workspace_id", None)
-            if not workspace_id:
-                raise Exception("Please create Avalon workspace for this incident first.") 
+                # get workspace ID
+                workspace_id = incident["properties"].get("avalon_workspace_id", None)
+                if not workspace_id:
+                    raise Exception("Please create Avalon workspace for this incident first.") 
 
-            # Call to get workspace / graph object. We need the graph UUID
-            workspace_uuid = self._get_avalon_workspace_uuid(workspace_id)
+                # Call to get workspace / graph object. We need the graph UUID
+                workspace_uuid = self._get_avalon_workspace_uuid(workspace_id)
 
-            # Get all avalon nodes
-            nodes = self._get_all_avalon_nodes(workspace_id, workspace_uuid)
+                # Get all avalon nodes
+                nodes = self._get_all_avalon_nodes(workspace_id, workspace_uuid)
 
-            # Push all artifacts
-            total_success = True            
-            for artifact in artifacts:
-                # ignore the special Avalon Workspace artifact
-                artifact_type = Resilient.get_artifact_property(artifact, "type")
-                if artifact_type and artifact_type == "avalon_workspace":
-                    continue
+                # Push all artifacts
+                total_success = True            
+                for artifact in artifacts:
+                    # ignore the special Avalon Workspace artifact
+                    artifact_type = Resilient.get_artifact_property(artifact, "type")
+                    if artifact_type and artifact_type == "avalon_workspace":
+                        continue
 
-                # add only if node does not exist 
-                if not self._find_node_for_artifact(nodes, artifact):
-                   success = self._create_avalon_node(artifact, workspace_id)
-                   total_success = total_success and success 
+                    # add only if node does not exist 
+                    if not self._find_node_for_artifact(nodes, artifact):
+                        success = self._create_avalon_node(artifact, workspace_id)
+                        total_success = total_success and success 
 
-            if not total_success:
-                return "Some artifacts could not be pushed to Avalon."
-    
-            return "Successfully pushed all artifacts to Avalon."
-        except Exception as err:
-            # NOTE: This will still mark the action as complete in IBM Resilient
-            return "Error: {}".format(str(err))
+                if not total_success:
+                    return "Some artifacts could not be pushed to Avalon."
+        
+                return "Successfully pushed all artifacts to Avalon."
+            except Exception as err:
+                # NOTE: This will still mark the action as complete in IBM Resilient
+                return "Error: {}".format(str(err))
 
 
     # Pushes one artifact from a Resilient Incident to an Avalon Workspace node 
     # The Avalon Workspace must be linked to the Resilient Incident first
     def push_one_resilient_artifact(self, incident, artifact):
-        try:
-            # get workspace ID
-            workspace_id = incident["properties"].get("avalon_workspace_id", None)
-            if not workspace_id:
-                raise Exception("Please create Avalon workspace for this incident first.") 
+        with push_lock:
+            try:
+                # get workspace ID
+                workspace_id = incident["properties"].get("avalon_workspace_id", None)
+                if not workspace_id:
+                    raise Exception("Please create Avalon workspace for this incident first.") 
 
-            # Call to get workspace / graph object. We need the graph UUID
-            workspace_uuid = self._get_avalon_workspace_uuid(workspace_id)
+                # Call to get workspace / graph object. We need the graph UUID
+                workspace_uuid = self._get_avalon_workspace_uuid(workspace_id)
 
-            # Get all avalon nodes
-            nodes = self._get_all_avalon_nodes(workspace_id, workspace_uuid)
-            
-            if self._find_node_for_artifact(nodes, artifact):
-                raise Exception("Could not add Avalon node. A node with value {} already exists.".format(artifact["value"]))
+                # Get all avalon nodes
+                nodes = self._get_all_avalon_nodes(workspace_id, workspace_uuid)
+                
+                if self._find_node_for_artifact(nodes, artifact):
+                    raise Exception("Could not add Avalon node. A node with value {} already exists.".format(artifact["value"]))
 
-            if not self._create_avalon_node(artifact, workspace_id):
-                raise IntegrationError("Unsupported artifact.")
-    
-            return "{} added to Avalon.".format(artifact["value"])
-        except Exception as err:
-            # NOTE: This will still mark the action as complete in IBM Resilient
-            return "Error: {}".format(str(err))
+                if not self._create_avalon_node(artifact, workspace_id):
+                    raise IntegrationError("Unsupported artifact.")
+        
+                return "{} added to Avalon.".format(artifact["value"])
+            except Exception as err:
+                # NOTE: This will still mark the action as complete in IBM Resilient
+                return "Error: {}".format(str(err))
 
     @staticmethod    
     def validate_fields(fieldList, kwargs):

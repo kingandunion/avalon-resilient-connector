@@ -84,7 +84,12 @@ class Resilient:
         new_artifact_uri = "/incidents/{}/artifacts".format(incident_id)
         self.rest_client.post(new_artifact_uri, new_artifact)
 
-    def incident_set_avalon_workspace_id(self, incident_id, avalon_workspace_id):
+    def incident_get(self, incident_id):
+        incident_get_uri = "/incidents/{}".format(incident_id)
+        resp = self.rest_client.get(incident_get_uri)
+        return resp
+
+    def incident_set_avalon_workspace_id(self, incident_id, workspace_id):
         patch_data =  {
             "changes": [
                 {
@@ -92,7 +97,33 @@ class Resilient:
                     "name": "avalon_workspace_id"
                 },
                 "old_value": {},
-                "new_value": avalon_workspace_id
+                "new_value": workspace_id
+                }
+            ],
+            "version": 0
+        }        
+    
+        incident_patch_uri = "/incidents/{}".format(incident_id)
+        resp = self.rest_client.patch(incident_patch_uri, patch_data)
+        return resp
+
+
+    def incident_get_avalon_last_pull_time(self, incident):
+        return incident["properties"]["avalon_last_pull_time"]
+
+
+    def incident_set_avalon_last_pull_time(self, incident_id, new_pull_time, old_pull_time):
+        new_pull_time_iso_format = new_pull_time.isoformat()
+        old_pull_time_iso_format = old_pull_time.isoformat() if old_pull_time else {}
+
+        patch_data =  {
+            "changes": [
+                {
+                "field": {
+                    "name": "avalon_last_pull_time"
+                },
+                "old_value": old_pull_time_iso_format,
+                "new_value": new_pull_time_iso_format
                 }
             ],
             "version": 0
