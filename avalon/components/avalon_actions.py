@@ -56,14 +56,14 @@ class AvalonActions(ResilientComponent):
         return self._avalon_create_workspace(event, args, kwargs)
 
 
-    # Handles "Avalon: Pull All Nodes" action 
-    @handler("avalon_pull_all_nodes")
+    # Handles "Avalon: Pull Nodes" action 
+    @handler("avalon_pull_nodes")
     def handle_avalon_pull_nodes(self, event, *args, **kwargs):
         return self._avalon_pull_all_nodes(event, args, kwargs)
 
 
-    # Handles "Avalon: Push All Artifacts" action. This is called for artifacts only 
-    @handler("avalon_push_all_artifacts")
+    # Handles "Avalon: Push Artifacts" action. This is called for artifacts only 
+    @handler("avalon_push_artifacts")
     def handle_avalon_push_all_artifact(self, event, *args, **kwargs):
         return self._avalon_push_all_artifacts(event, args, kwargs)
 

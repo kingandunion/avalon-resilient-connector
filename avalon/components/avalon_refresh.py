@@ -32,8 +32,8 @@ class AvalonRefreshFunction(ResilientComponent):
             log = logging.getLogger(__name__)
 
             # PUT YOUR FUNCTION IMPLEMENTATION CODE HERE
-            #  yield StatusMessage("starting...")
-            #  yield StatusMessage("done...")
+            yield StatusMessage("starting...")
+            yield StatusMessage("done...")
 
             results = {
                 "value": "xyz"
