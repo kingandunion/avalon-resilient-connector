@@ -12,7 +12,7 @@ def codegen_reload_data():
                     "action_fields": [], 
                     "functions_params": [], 
                     "datatables": [], 
-                    "message_destinations": [u"avalon_actions", u"avalon_black_hole"], 
+                    "message_destinations": [u"avalon_actions"], 
                     "functions": [u"avalon_refresh"], 
                     "phases": [], 
                     "automatic_tasks": [], 

@@ -27,7 +27,6 @@ setup(
     entry_points={
         "resilient.circuits.components": [
             "AvalonActions = avalon.components.avalon_actions:AvalonActions",
-            "AvalonBlackHole = avalon.components.avalon_black_hole:AvalonBlackHole",
             "AvalonRefreshFunction = avalon.components.avalon_refresh:AvalonRefreshFunction"
         ],
         "resilient.circuits.configsection": ["gen_config = avalon.util.config:config_section_data"],
