@@ -10,8 +10,9 @@ HEADERS = {
 }
 
 class Avalon:
-    def __init__(self, base_url, api_token):
+    def __init__(self, base_url, api_token, logger):
         self.reload(base_url, api_token)
+        self.logger = logger
 
     def reload(self, base_url, api_token):
         self.base_url = base_url
@@ -25,11 +26,9 @@ class Avalon:
         workspace_id = int(m.group("graphid"))
         return workspace_id
 
-    def workspace_create(self, data, log):
+    def workspace_create(self, data):
         """
         Create a new Avalon workspace / graph
-        :param log: logger
-        :param api_token: Avalon API token
         :param data: Dict with post data. It will be converted to JSON  
         :return: the responsefrom the Avalon API
         """
@@ -52,15 +51,14 @@ class Avalon:
 
             return resp 
         except Exception as err:
-            log and log.error(err)
+            self.logger and self.logger.error(err)
             raise IntegrationError(err)
 
-    def workspace_get(self, workspace_id, log):
+    def workspace_get(self, workspace_id):
         """
         Get Avalon workspace / graph details
         :param api_token: Avalon API token
         :param workspace_id: Workspace / Graph ID
-        :param log: logger
         :return: the responsefrom the Avalon API
         """
 
@@ -78,16 +76,15 @@ class Avalon:
 
             return resp 
         except Exception as err:
-            log and log.error(err)
+            self.logger and self.logger.error(err)
             raise IntegrationError(err)
 
-    def workspace_export(self, workspace_id, workspace_uuid, export_format, log):
+    def workspace_export(self, workspace_id, workspace_uuid, export_format):
         """
         Export Avalon workspace / graph 
         :param workspace_id: Workspace / Graph ID
         :param workspace_uuid: Workspace / Graph UUID
         :param export_format: string, one of csv | json | jsonedge | cb-json | stix | stix-json | bro-intel
-        :param log: logger
         :return: the responsefrom the Avalon API
         """
 
@@ -102,17 +99,16 @@ class Avalon:
 
             return resp 
         except Exception as err:
-            log and log.error(err)
+            self.logger and self.logger.error(err)
             raise IntegrationError(err)
 
 
-    def workspace_add_node(self, workspace_id, data, log):
+    def workspace_add_node(self, workspace_id, data):
         """
         Create a new Avalon workspace
         :param api_token: Avalon API token
         :param workspace_id: Workspace / Graph ID
         :param data: Dict with post data. It will be converted to JSON  
-        :param log: logger
         :return: the responsefrom the Avalon API
         """
 
@@ -133,11 +129,11 @@ class Avalon:
 
             return resp 
         except Exception as err:
-            log and log.error(err)
+            self.logger and self.logger.error(err)
             raise IntegrationError(err)
 
     @staticmethod
-    def check_error(resp, log):
+    def check_error(resp):
         # handle results such as this:
 
         #   {
@@ -159,7 +155,6 @@ class Avalon:
             result = resp.json()
             if "errors" in result:
                 msg = json.dumps(result, indent=4, separators=(",", ": "))
-                log.error(msg)
                 return (True, msg) 
             
             raise IntegrationError(resp.text)
