@@ -5,18 +5,18 @@ import logging
 from circuits.core.handlers import handler
 from resilient_circuits.actions_component import ResilientComponent, ActionMessage, StatusMessage
 
-from avalon.lib import resilient_api as res
 from avalon.lib.errors import IntegrationError, WorkspaceLinkError
 from avalon.lib.avalon_api import Avalon
+from avalon.lib.resilient_api import Resilient, ArtifactType
 
 logger = logging.getLogger(__name__)
 
 # maps Avalon Node type to IBM Resilient Artifact type
 # only the types that directly correspond to one another are mapped
 node_to_artifact_type = dict(
-    ip = res.ArtifactType.ip_address,
-    domain = res.ArtifactType.dns_name,
-    url = res.ArtifactType.url,
+    ip = ArtifactType.ip_address,
+    domain = ArtifactType.dns_name,
+    url = ArtifactType.url,
 )
 
 # maps IBM Resilient Artifact type to Avalon Node type
@@ -34,9 +34,14 @@ class AvalonActions(ResilientComponent):
         self.res_options = opts.get("resilient", {})
 
         self.options = opts.get("avalon", {})
-        res.validate_fields(["base_url", "api_token"], self.options)
+        Resilient.validate_fields(["base_url", "api_token"], self.options)
 
-        self.av = Avalon(self.options)
+        base_url = self.options["base_url"]
+        api_token = self.options["api_token"]
+        self.av = Avalon(base_url, api_token)
+
+        rest_client = self.rest_client()
+        self.res = Resilient(rest_client)
 
 
     @handler("reload")
@@ -45,44 +50,24 @@ class AvalonActions(ResilientComponent):
         self.res_options = opts.get("resilient", {})
         
         self.options = opts.get("avalon", {})
-        res.validate_fields(["base_url", "api_token"], self.options)
+        Resilient.validate_fields(["base_url", "api_token"], self.options)
 
-        self.av.reload(self.options)
+        base_url = self.options["base_url"]
+        api_token = self.options["api_token"]
+        self.av.reload(base_url, api_token)
 
 
     # Handles Avalon: Create Workspace action 
     @handler("avalon_create_workspace")
     def handle_avalon_create_workspace(self, event, *args, **kwargs):
-        return self._avalon_create_workspace(event, args, kwargs)
-
-
-    # Handles "Avalon: Pull Nodes" action 
-    @handler("avalon_pull_nodes")
-    def handle_avalon_pull_nodes(self, event, *args, **kwargs):
-        return self._avalon_pull_all_nodes(event, args, kwargs)
-
-
-    # Handles "Avalon: Push Artifacts" action. This is called for artifacts only 
-    @handler("avalon_push_artifacts")
-    def handle_avalon_push_all_artifact(self, event, *args, **kwargs):
-        return self._avalon_push_all_artifacts(event, args, kwargs)
-
-
-    # Handles "Avalon: Push Artifact" action. This is called for artifacts only 
-    @handler("avalon_push_artifact")
-    def handle_avalon_push_artifact(self, event, *args, **kwargs):
-        return self._avalon_push_artifact(event, args, kwargs)
-
-
-    def _avalon_create_workspace(self, event, *args, **kwargs):
         # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+
+        # incident data
+        incident = event.message["incident"]
+        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
         # the user who triggered the action
         who = event.message["user"]["email"]
-
-        # incident data (and other context)
-        incident = event.message["incident"]
-        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
         # TODO: Eventually we might allow user to specify the name and the summary 
         # for the new Avalon workspace in IBM Resilient and pass those values 
@@ -91,6 +76,43 @@ class AvalonActions(ResilientComponent):
         # workspace_title = clean_html(kwargs.get(u"avalon_workspace_title"))  # text
         # workspace_summary = clean_html(kwargs.get(u"avalon_workspace_summary"))  # text
 
+        return self._avalon_create_workspace(incident, who)
+
+
+    # Handles "Avalon: Pull Nodes" action 
+    @handler("avalon_pull_nodes")
+    def handle_avalon_pull_nodes(self, event, *args, **kwargs):
+        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+        incident = event.message["incident"]
+        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
+
+        return self._avalon_pull_all_nodes(incident)
+
+
+    # Handles "Avalon: Push Artifacts" action. This is called for artifacts only 
+    @handler("avalon_push_artifacts")
+    def handle_avalon_push_all_artifact(self, event, *args, **kwargs):
+        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+        incident = event.message["incident"]
+        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
+
+        return self._avalon_push_all_artifacts(incident)
+
+
+    # Handles "Avalon: Push Artifact" action. This is called for artifacts only 
+    @handler("avalon_push_artifact")
+    def handle_avalon_push_artifact(self, event, *args, **kwargs):
+        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+        incident = event.message["incident"]
+        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
+
+        artifact = event.message["artifact"]
+        logger.info("Called from artifact {}: {}".format(artifact["id"], artifact["value"]))
+
+        return self._avalon_push_artifact(incident, artifact)
+
+
+    def _avalon_create_workspace(self, incident, who):
         try:
             # create Avalon workspace
             self._create_workspace(incident, who)
@@ -139,26 +161,20 @@ class AvalonActions(ResilientComponent):
         workspace_id = self.av.workspace_id_from_url(workspace_url)
 
         # Set the workspace id field
-        res.incident_set_avalon_workspace_id(self.rest_client(), incident["id"], workspace_id)
+        self.res.incident_set_avalon_workspace_id(incident["id"], workspace_id)
 
         # Add a new artifact to the incident
         artifact_title = "Avalon Workspace"
         artifact_description = "Avalon workspace address: {}".format(workspace_url)
-        res.incident_add_workspace_artifact(self.rest_client(), 
-                                                incident["id"], 
+        self.res.incident_add_workspace_artifact(incident["id"], 
                                                 artifact_title, artifact_description, 
                                                 workspace_id, workspace_url)
 
 
-    def _avalon_pull_all_nodes(self, event, *args, **kwargs):
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
-
-        incident = event.message["incident"]
-        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
-
+    def _avalon_pull_all_nodes(self, incident):
         try:
             incident_id = incident["id"]
-            artifacts = res.incident_get_artifacts(self.rest_client(), incident_id)
+            artifacts = self.res.incident_get_artifacts(incident_id)
 
             # get workspace ID
             workspace_id = incident["properties"].get("avalon_workspace_id", None)
@@ -206,18 +222,13 @@ class AvalonActions(ResilientComponent):
 
             # add new artifact to incident
             artifact_description = "Created from Avalon workspace node."
-            res.incident_add_artifact(self.rest_client(), incident_id, artifact_type, artifact_value, artifact_description)
+            self.res.incident_add_artifact(incident_id, artifact_type, artifact_value, artifact_description)
 
 
-    def _avalon_push_all_artifacts(self, event, *args, **kwargs):
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
-
-        incident = event.message["incident"]
-        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
-
+    def _avalon_push_all_artifacts(self, incident):
         try:
             incident_id = incident["id"]
-            artifacts = res.incident_get_artifacts(self.rest_client(), incident_id)
+            artifacts = self.res.incident_get_artifacts(incident_id)
 
             # get workspace ID
             workspace_id = incident["properties"].get("avalon_workspace_id", None)
@@ -234,7 +245,7 @@ class AvalonActions(ResilientComponent):
             total_success = True            
             for artifact in artifacts:
                 # ignore the special Avalon Workspace artifact
-                artifact_type = res.get_artifact_property(artifact, "type")
+                artifact_type = Resilient.get_artifact_property(artifact, "type")
                 if artifact_type and artifact_type == "avalon_workspace":
                     continue
 
@@ -252,15 +263,7 @@ class AvalonActions(ResilientComponent):
             return "Error: {}".format(str(err))
 
 
-    def _avalon_push_artifact(self, event, *args, **kwargs):
-        # incident data (and other context)
-        incident = event.message["incident"]
-        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
-
-        # artifact data (and other context)
-        artifact = event.message["artifact"]
-        logger.info("Called from artifact {}: {}".format(artifact["id"], artifact["value"]))
-
+    def _avalon_push_artifact(self, incident, artifact):
         try:
             # Add Avalon node
             self._push_artifact(incident, artifact)

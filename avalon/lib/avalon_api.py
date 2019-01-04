@@ -10,13 +10,12 @@ HEADERS = {
 }
 
 class Avalon:
-    def __init__(self, options):
-        self.reload(options)
+    def __init__(self, base_url, api_token):
+        self.reload(base_url, api_token)
 
-    def reload(self, options):
-        self.options = options
-        self.base_url = self.options["base_url"]
-        self.api_token = self.options["api_token"]
+    def reload(self, base_url, api_token):
+        self.base_url = base_url
+        self.api_token = api_token 
 
     def workspace_id_from_url(self, workspace_url):
         m = re.search(r'workspaces/(?P<graphid>\d+)/$', workspace_url)
