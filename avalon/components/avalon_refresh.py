@@ -41,5 +41,6 @@ class AvalonRefreshFunction(ResilientComponent):
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
+            # yield FunctionError()
         except Exception:
             yield FunctionError()
