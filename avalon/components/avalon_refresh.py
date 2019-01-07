@@ -70,9 +70,7 @@ class AvalonRefreshFunction(ResilientComponent):
 
             # set the last called filed
             new_pull_time = datetime.now(tz=tzlocal.get_localzone())
-            
-            old_pull_timestamp = self.res.incident_get_avalon_last_pull_time(incident)
-            old_pull_time = datetime.fromtimestamp(old_pull_timestamp) if old_pull_timestamp else None
+            old_pull_time = self.res.incident_get_avalon_last_pull_time(incident)
             
             self.res.incident_set_avalon_last_pull_time(incident_id, new_pull_time, old_pull_time)
 

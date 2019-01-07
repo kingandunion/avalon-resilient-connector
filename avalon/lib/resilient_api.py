@@ -1,4 +1,7 @@
 from enum import IntEnum
+from datetime import datetime
+import pytz
+import tzlocal
 
 # IBM Resilient Artifact Types 
 # see: https://10.1.0.151/docs/rest-api/ui/index.html#!/TypeREST/resource_TypeREST_getType_GET
@@ -109,8 +112,16 @@ class Resilient:
 
 
     def incident_get_avalon_last_pull_time(self, incident):
-        return incident["properties"]["avalon_last_pull_time"]
+        last_pull_timestamp = incident["properties"]["avalon_last_pull_time"]
 
+        if not last_pull_timestamp:
+            return None
+
+        # last_pull_timestamp is a Java timestamp:
+        # milliseconds since January 1, 1970, 00:00:00 GMT
+        last_pul_time = datetime.fromtimestamp(last_pull_timestamp / 1000.0, tz=tzlocal.get_localzone())
+        return last_pul_time
+        
 
     def incident_set_avalon_last_pull_time(self, incident_id, new_pull_time, old_pull_time):
         new_pull_time_iso_format = new_pull_time.isoformat()
