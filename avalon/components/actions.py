@@ -125,7 +125,7 @@ class Actions:
 
     # Pushes one artifact from a Resilient Incident to an Avalon Workspace node 
     # The Avalon Workspace must be linked to the Resilient Incident first
-    def push_one_resilient_artifact(self, incident, artifact):
+    def push_single_resilient_artifact(self, incident, artifact):
         with push_lock:
             try:
                 # get workspace ID
@@ -149,6 +149,38 @@ class Actions:
             except Exception as err:
                 # NOTE: This will still mark the action as complete in IBM Resilient
                 return "Error: {}".format(str(err))
+
+    # Stops the auto-refresh workflow 
+    def stop_auto_refresh_workflow(self, incident):
+        with pull_lock:
+            try:
+                incident_id = incident["id"]
+
+                # get auto refresh workflow running instance 
+                workflow_instances = self.res.incident_get_workflow_instances(incident_id)
+
+                if workflow_instances:
+                    workflow_instance = [
+                        wi 
+                        for wi in workflow_instances["entities"] 
+                        if "running" == wi.get("status") and
+                        "avalon_refresh" == wi["workflow"].get("programmatic_name") 
+                    ] 
+
+                    if workflow_instance:
+                        # terminate the workflow 
+                        workflow_instance_id = workflow_instance[0]["workflow_instance_id"] 
+                        self.res.incident_terminate_workflow_instance(workflow_instance_id)
+
+                        # set the auto refresh field to false
+                        old_value = self.res.incident_get_avalon_auto_refresh(incident) 
+                        self.res.incident_set_avalon_auto_refresh(incident_id, False, old_value)
+
+                return "Avalon Auto-refresh workflow stopped successfully."
+            except Exception as err:
+                # NOTE: This will still mark the action as complete in IBM Resilient
+                return "Error: {}".format(str(err))
+
 
     @staticmethod    
     def validate_fields(fieldList, kwargs):

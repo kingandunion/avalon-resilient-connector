@@ -41,11 +41,11 @@ class AvalonActions(ResilientComponent):
         self.actions.reload(base_url, api_token)
 
 
+    # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
+
     # Handles Avalon: Create Workspace action 
     @handler("avalon_create_workspace")
     def handle_avalon_create_workspace(self, event, *args, **kwargs):
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
-
         # incident data
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
@@ -66,7 +66,6 @@ class AvalonActions(ResilientComponent):
     # Handles "Avalon: Pull Nodes" action 
     @handler("avalon_pull_nodes")
     def handle_avalon_pull_nodes(self, event, *args, **kwargs):
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
@@ -76,7 +75,6 @@ class AvalonActions(ResilientComponent):
     # Handles "Avalon: Push Artifacts" action. This is called for artifacts only 
     @handler("avalon_push_artifacts")
     def handle_avalon_push_all_artifact(self, event, *args, **kwargs):
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
@@ -86,14 +84,18 @@ class AvalonActions(ResilientComponent):
     # Handles "Avalon: Push Artifact" action. This is called for artifacts only 
     @handler("avalon_push_artifact")
     def handle_avalon_push_artifact(self, event, *args, **kwargs):
-        # Any string returned by the handler function is shown to the Resilient user in the Action Status dialog
         incident = event.message["incident"]
         logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
         artifact = event.message["artifact"]
         logger.info("Called from artifact {}: {}".format(artifact["id"], artifact["value"]))
 
-        return self.actions.push_one_resilient_artifact(incident, artifact)
+        return self.actions.push_single_resilient_artifact(incident, artifact)
 
+    # Handles "Avalon: Stop Auto-refresh Workflow" action.
+    @handler("avalon_stop_auto_refresh_workflow")
+    def handle_avalon_stop_auto_refresh_workflow(self, event, *args, **kwargs):
+        incident = event.message["incident"]
+        logger.info("Called from incident {}: {}".format(incident["id"], incident["name"]))
 
-   
+        return self.actions.stop_auto_refresh_workflow(incident)

@@ -92,15 +92,36 @@ class Resilient:
         resp = self.rest_client.get(incident_get_uri)
         return resp
 
-    def incident_set_avalon_workspace_id(self, incident_id, workspace_id):
+    def incident_set_avalon_workspace_id(self, incident_id, new_value, old_value = None):
         patch_data =  {
             "changes": [
                 {
                 "field": {
                     "name": "avalon_workspace_id"
                 },
-                "old_value": {},
-                "new_value": workspace_id
+                "old_value": old_value if old_value else {},
+                "new_value": new_value
+                }
+            ],
+            "version": 0
+        }        
+    
+        incident_patch_uri = "/incidents/{}".format(incident_id)
+        resp = self.rest_client.patch(incident_patch_uri, patch_data)
+        return resp
+
+    def incident_get_avalon_auto_refresh(self, incident):
+        return incident["properties"]["avalon_auto_refresh"]
+
+    def incident_set_avalon_auto_refresh(self, incident_id, new_value, old_value = None):
+        patch_data =  {
+            "changes": [
+                {
+                "field": {
+                    "name": "avalon_auto_refresh"
+                },
+                "old_value": { "boolean": old_value if old_value else {} },
+                "new_value": { "boolean": new_value }
                 }
             ],
             "version": 0
@@ -123,9 +144,9 @@ class Resilient:
         return last_pul_time
         
 
-    def incident_set_avalon_last_pull_time(self, incident_id, new_pull_time, old_pull_time):
-        new_pull_time_iso_format = new_pull_time.isoformat()
-        old_pull_time_iso_format = old_pull_time.isoformat() if old_pull_time else {}
+    def incident_set_avalon_last_pull_time(self, incident_id, new_value, old_value):
+        new_pull_time_iso_format = new_value.isoformat()
+        old_pull_time_iso_format = old_value.isoformat() if old_value else {}
 
         patch_data =  {
             "changes": [
@@ -178,6 +199,25 @@ class Resilient:
                 return artifact
 
         return None
+
+    def incident_get_workflow_instances(self, incident_id):
+        workflow_instances_uri = "/incidents/{}/workflow_instances".format(incident_id)
+        workflow_instances = self.rest_client.get(workflow_instances_uri)
+        return workflow_instances
+
+    def incident_get_workflow_instance(self, workflow_instance_id):
+        workflow_instance_uri = "/workflow_instances/{}".format(workflow_instance_id)
+        workflow_instance = self.rest_client.get(workflow_instance_uri)
+        return workflow_instance
+
+    def incident_terminate_workflow_instance(self, workflow_instance_id):
+        workflow_instance_uri = "/workflow_instances/{}".format(workflow_instance_id)
+        put_data = {
+            "status": "terminated"
+        }
+        
+        workflow_instance = self.rest_client.put(workflow_instance_uri, put_data)
+        return workflow_instance
 
     @staticmethod
     def get_artifact_property(artifact, name):

@@ -60,6 +60,18 @@ class AvalonRefreshFunction(ResilientComponent):
         incident = self.res.incident_get(incident_id)
 
         try:
+            new_pull_time = datetime.now(tz=tzlocal.get_localzone())
+            old_pull_time = self.res.incident_get_avalon_last_pull_time(incident)
+
+            # pull every 60 minutes
+            if old_pull_time:
+                minute_delta = (new_pull_time - old_pull_time).seconds / 60.0 
+                if minute_delta < 60:
+                    # return empty dict (no particular result)
+                    yield FunctionResult({})
+                    return
+
+            # pull nodes from Avalon
             yield StatusMessage("Starting...")
 
             result = self.actions.pull_avalon_nodes(incident)            
@@ -68,10 +80,7 @@ class AvalonRefreshFunction(ResilientComponent):
 
             yield StatusMessage("Done.")
 
-            # set the last called filed
-            new_pull_time = datetime.now(tz=tzlocal.get_localzone())
-            old_pull_time = self.res.incident_get_avalon_last_pull_time(incident)
-            
+            # set the last pull time
             self.res.incident_set_avalon_last_pull_time(incident_id, new_pull_time, old_pull_time)
 
             # return empty dict (no particular result)
