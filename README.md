@@ -64,3 +64,11 @@ pip install fn_avalon<version>.tar.gz
 	api_token=<avalon-api-token>
 	```
 
+## Selftest
+
+Once you complete the configuratio , you can use the selftest command to do a basic connectivity test, as follows:
+
+```
+resilient-circuits selftest --list avalon
+```
+
