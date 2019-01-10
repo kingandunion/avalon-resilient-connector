@@ -14,9 +14,34 @@ class Avalon:
         self.reload(base_url, api_token)
         self.logger = logger
 
+
     def reload(self, base_url, api_token):
         self.base_url = base_url
         self.api_token = api_token 
+
+
+    def ping_get(self):
+        """
+        Get API ping endpoint.
+        """
+
+        # url
+        path = "api/ping/token"
+        url = "/".join((self.base_url, path))
+
+        # headers
+        headers = self._build_headers()
+
+        try:
+            resp = requests.get(url, verify=True, headers=headers)
+            if resp is None:
+                raise IntegrationError("no response returned")
+
+            return resp 
+        except Exception as err:
+            self.logger and self.logger.error(err)
+            raise IntegrationError(err)
+
 
     def workspace_id_from_url(self, workspace_url):
         m = re.search(r'workspaces/(?P<graphid>\d+)/$', workspace_url)

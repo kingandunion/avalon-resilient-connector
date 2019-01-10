@@ -172,9 +172,9 @@ class Actions:
                         workflow_instance_id = workflow_instance[0]["workflow_instance_id"] 
                         self.res.incident_terminate_workflow_instance(workflow_instance_id)
 
-                        # set the auto refresh field to false
-                        old_value = self.res.incident_get_avalon_auto_refresh(incident) 
-                        self.res.incident_set_avalon_auto_refresh(incident_id, False, old_value)
+                # set the auto refresh field to false
+                old_value = self.res.incident_get_avalon_auto_refresh(incident) 
+                self.res.incident_set_avalon_auto_refresh(incident_id, False, old_value)
 
                 return "Avalon Auto-refresh workflow stopped successfully."
             except Exception as err:
@@ -226,7 +226,7 @@ class Actions:
 
         # Add a new artifact to the incident
         artifact_title = "Avalon Workspace"
-        artifact_description = "Avalon workspace address: {}".format(workspace_url)
+        artifact_description = "Avalon workspace link: {}".format(workspace_url)
         self.res.incident_add_workspace_artifact(incident["id"], 
                                                 artifact_title, artifact_description, 
                                                 workspace_id, workspace_url)

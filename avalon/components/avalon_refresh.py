@@ -8,25 +8,25 @@ import pytz
 import tzlocal
 
 from resilient_circuits import ResilientComponent, function, handler, StatusMessage, FunctionResult, FunctionError
-import avalon.util.selftest as selftest
 
 from .actions import Actions
 from avalon.lib.resilient_api import Resilient
+import avalon.util.selftest as selftest
+
 
 logger = logging.getLogger(__name__)
 
 class AvalonRefreshFunction(ResilientComponent):
     """Component that implements Resilient function 'avalon_refresh"""
 
-
     def __init__(self, opts):
         """constructor provides access to the configuration options"""
         super(AvalonRefreshFunction, self).__init__(opts)
 
+        selftest.selftest_function(opts)
+
         self.options = opts.get("avalon", {})
         Actions.validate_fields(["base_url", "api_token"], self.options)
-
-        selftest.selftest_function(opts)
 
         base_url = self.options["base_url"]
         api_token = self.options["api_token"]
