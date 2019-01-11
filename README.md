@@ -1,8 +1,6 @@
 # Avalon for IBM Resilient
 
-This package contains components that manage Avalon workspaces from IBM Resilient. 
-
-User needs to obtain API token from [Avalon](https://avalon.kingandunion.com).
+This package contains components that integrate Avalon with IBM Resilient. 
 
 ## Installation
 
@@ -63,6 +61,12 @@ pip install fn_avalon<version>.tar.gz
 	base_url=<avalon-base-url>
 	api_token=<avalon-api-token>
 	```
+	
+	`base_url` have to be set to `https://avalon.kingandunion.com`. 
+	
+	The API token for your user can be found under [Avalon](https://avalon.kingandunion.com) > User > Profile Settings:
+	
+	![profile-settings](./doc/screenshots/01-profile-settings.jpg)     
 
 ## Selftest
 
@@ -72,3 +76,6 @@ Once you complete the configuratio , you can use the selftest command to do a ba
 resilient-circuits selftest --list avalon
 ```
 
+## Usage
+
+See [User Guide](./doc/user-guide.md)
