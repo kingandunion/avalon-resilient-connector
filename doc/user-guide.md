@@ -16,6 +16,6 @@ After incident creation:
 
 ## Create Avalon workspace
 
-Navigate to the newly create incident in IBM Resilient and select `Avalon: Create Workspace` from the `Actions` menu:
+Navigate to the newly created incident in IBM Resilient and select `Avalon: Create Workspace` from the `Actions` menu:
 
 ![create-workspace](./screenshots/05-create-workspace.jpg)
