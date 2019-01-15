@@ -78,4 +78,4 @@ resilient-circuits selftest --list avalon
 
 ## Usage
 
-See [User Guide](./doc/user-guide.md)
+See the [Tutorial](./doc/tutorial.md)

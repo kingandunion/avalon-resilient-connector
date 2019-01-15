@@ -4,12 +4,8 @@ import requests
 
 from .errors import IntegrationError
 
-HEADERS_JSON = { 
+HEADERS = { 
     "Content-Type": "application/json",
-    "Authorization": "Token {}"
-}
-
-HEADERS_FORM = { 
     "Authorization": "Token {}"
 }
 
@@ -34,7 +30,7 @@ class Avalon:
         url = "/".join((self.base_url, path))
 
         # headers
-        headers = self._build_headers_json()
+        headers = self._build_headers()
 
         try:
             resp = requests.get(url, verify=True, headers=headers)
@@ -67,10 +63,10 @@ class Avalon:
         url = "/".join((self.base_url, path))
 
         # headers
-        headers = self._build_headers_form()
+        headers = self._build_headers()
 
-        # payload (should not be json)
-        payload = data
+        # payload
+        payload = json.dumps(data)
 
         try:
             resp = requests.post(url, verify=True, headers=headers, data=payload)
@@ -96,7 +92,7 @@ class Avalon:
         url = "/".join((self.base_url, path))
 
         # headers
-        headers = self._build_headers_json()
+        headers = self._build_headers()
 
         try:
             resp = requests.get(url, verify=True, headers=headers)
@@ -146,7 +142,7 @@ class Avalon:
         url = "/".join((self.base_url, path))
 
         # headers
-        headers = self._build_headers_json()
+        headers = self._build_headers()
 
         # payload
         payload = json.dumps(data)
@@ -190,25 +186,15 @@ class Avalon:
 
         return (False, "")         
 
-    def _build_headers_json(self):
+    def _build_headers(self):
         """
         build the header needed for API calls
         :param api_token:
         :return: https headers
         """
-        headers = HEADERS_JSON.copy()
+        headers = HEADERS.copy()
         headers["Authorization"] = headers["Authorization"].format(self.api_token)
 
         return headers
 
-    def _build_headers_form(self):
-        """
-        build the header needed for API calls
-        :param api_token:
-        :return: https headers
-        """
-        headers = HEADERS_JSON.copy()
-        headers["Authorization"] = headers["Authorization"].format(self.api_token)
-
-        return headers
 
