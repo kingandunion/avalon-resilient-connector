@@ -1,3 +1,4 @@
+import re
 import threading
 
 from avalon.lib.errors import IntegrationError, WorkspaceLinkError
@@ -6,15 +7,28 @@ from avalon.lib.resilient_api import Resilient, ArtifactType
 
 # maps Avalon Node type to IBM Resilient Artifact type
 # only the types that directly correspond to one another are mapped
-node_to_artifact_type = dict(
+supported_artifacts = dict(
     ip = ArtifactType.ip_address,
     domain = ArtifactType.dns_name,
     url = ArtifactType.url,
 )
 
+# Supported hash types. These map to hash_malware in Avalon
+hash_node_type = "hash_malware"
+supported_hash_artifacts = [ 
+    ArtifactType.malware_md5_hash,
+    ArtifactType.malware_sha_1_hash,
+    ArtifactType.malware_sha_256_hash
+]
+
 # maps IBM Resilient Artifact type to Avalon Node type
-# the reverse map of node_to_artifact_type above
-artifact_to_node_type = dict(reversed(item) for item in node_to_artifact_type.items())
+# the reverse map of supported_artifacts above
+supported_nodes = dict(reversed(item) for item in supported_artifacts.items())
+
+# regex for matching hash values 
+isMD5 = re.compile(r'^[a-f0-9]{32}$')
+isSha1 = re.compile(r'^[a-f0-9]{40}$')
+isSha256 = re.compile(r'^[a-f0-9]{64}$')
 
 # node pulls should not overlap 
 pull_lock = threading.Lock()
@@ -22,6 +36,7 @@ pull_lock = threading.Lock()
 # arttifact pushes should not overlap 
 push_lock = threading.Lock()
 
+# Action implementation
 class Actions:
     def __init__(self, avalon_base_url, avalon_api_token, resilient_rest_client, logger):
         self.av = Avalon(avalon_base_url, avalon_api_token, logger)
@@ -239,10 +254,13 @@ class Actions:
             node_value = node[0]
             node_type = node[1]
 
-            # check whether it is a supported artifact            
-            artifact_type = node_to_artifact_type.get(node_type)
+            # is it a supported artifact            
+            artifact_type = supported_artifacts.get(node_type)
             if artifact_type is None:
-                continue
+                # is it a supported malware hash artifact
+                artifact_type = self._hash_node_to_hash_artifact(node_type, node_value)
+                if artifact_type is None:
+                    continue
 
             # check whether artifact with the same type and value already exists 
             artifact_value = node_value   
@@ -260,14 +278,29 @@ class Actions:
 
     # creates an Avalon node from a Resilient artifact 
     def _create_avalon_node(self, artifact, workspace_id):
-        if artifact["type"] not in artifact_to_node_type:
-            return False    
+        artifact_type = artifact["type"]
+        artifact_value = artifact["value"]
+    
+        # node type
+        node_type = None
+    
+        # is it a supported hash artifact 
+        if artifact_type in supported_hash_artifacts:    
+            node_type = hash_node_type 
+
+        if not node_type:
+            # is it a supported artifact but not a hash
+            node_type = supported_nodes.get(artifact_type)     
+            if not node_type:
+                return False
+
+        node_value = artifact_value
 
         data = {
             "nodes": [ 
                 { 
-                    "term": artifact["value"],
-                    "type": artifact_to_node_type.get(artifact["type"]) 
+                    "term": node_value,
+                    "type": node_type 
                 } 
             ]
         }
@@ -289,11 +322,13 @@ class Actions:
             node_value = node[0]
             node_type = node[1]
 
-            artifact_value = node_value                      
-
-            artifact_type = node_to_artifact_type.get(node_type)
+            artifact_type = supported_artifacts.get(node_type)
             if not artifact_type:
-                continue
+                artifact_type = self._hash_node_to_hash_artifact(node_type, node_value)
+                if not artifact_type:
+                    continue
+
+            artifact_value = node_value                      
 
             if artifact["type"] == artifact_type and artifact["value"] == artifact_value:
                 return True
@@ -326,8 +361,20 @@ class Actions:
 
         return nodes
 
+    # translates Avalon hash_malware node type to IBM Resilient malware hash artifact type  
+    def _hash_node_to_hash_artifact(self, node_type, node_value):
+        if node_type != hash_node_type:
+            return None
 
+        if isMD5.match(node_value):
+            return ArtifactType.malware_md5_hash
 
+        if isSha1.match(node_value):
+            return ArtifactType.malware_sha_1_hash
+            
+        if isSha256.match(node_value):
+            return ArtifactType.malware_sha_256_hash
+    
+        return None
 
-
-
+    
