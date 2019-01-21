@@ -46,8 +46,38 @@ pip install fn_avalon<version>.tar.gz
 	
 	This will create the following custom components:        
 	
-	* Message Destinations: `avalon.create_workspace`
-
+    Incident fields:
+    
+    * `avalon_auto_refresh`
+    * `avalon_last_pull_time`
+    * `avalon_workspace_id`
+    
+    Function inputs:
+    
+    * `incident_id`
+    * `incident_name`
+    
+    Message Destinations:
+    
+    * `avalon_actions`
+    
+    Functions:
+    
+    * `avalon_refresh`
+    
+    Workflows:
+    
+    * `avalon_refresh`
+    
+    Rules:
+    
+    * `Avalon: Create Workspace`
+    * `Avalon: Pull Nodes`
+    * `Avalon: Push Artifact`
+    * `Avalon: Push Artifacts`
+    * `Avalon: Start Auto-refresh Workflow`
+    * `Avalon: Stop Auto-refresh Workflow`
+    
 2. Update and edit `app.config` by first running:
 
 	```
