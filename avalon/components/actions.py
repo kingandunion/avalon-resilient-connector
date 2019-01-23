@@ -11,6 +11,7 @@ supported_artifacts = dict(
     ip = ArtifactType.ip_address,
     domain = ArtifactType.dns_name,
     url = ArtifactType.url,
+    email = ArtifactType.email_sender
 )
 
 # Supported hash types. These map to hash_malware in Avalon
