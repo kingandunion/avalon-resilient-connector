@@ -13,7 +13,7 @@ resilient-circuits >=v30.0.0
 To install in "development mode":
 
 ```
-pip install -e ./avalon/
+pip install -e .
 ```
 
 After installation, the package will be loaded by `resilient-circuits run`.
