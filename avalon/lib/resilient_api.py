@@ -1,51 +1,49 @@
-from enum import IntEnum
 from datetime import datetime
-import pytz
 import tzlocal
 
 # IBM Resilient Artifact Types 
 # see: https://10.1.0.151/docs/rest-api/ui/index.html#!/TypeREST/resource_TypeREST_getType_GET
-class ArtifactType(IntEnum):
+class ArtifactType:
     """IBM Resilient Artifact Types 
     """
     ip_address = 1
-    dns_name = 2,
-    url = 3,
-    rfc_822_email_message_file = 4,
-    email_subject = 5,
-    email_body = 6,
-    email_attachment = 7,
-    email_attachment_name = 8,
-    email_sender = 9,
-    malware_sample = 12,
-    malware_md5_hash = 13,
-    malware_sha_1_hash = 14,
-    log_file = 15,
-    other_file = 16,
-    email_sender_name = 19,
-    email_recipient = 20,
-    malware_sample_fuzzy_hash = 22,
-    user_account = 23,
-    registry_key = 24,
-    system_name = 25,
-    process_name = 26,
-    port = 27,
-    service = 28,
-    string = 29,
-    mutex = 30,
-    file_name = 31,
-    password = 32,
-    http_request_header = 34,
-    http_response_header = 35,
-    x509_certificate_file = 36,
-    file_path = 37,
-    malware_sha_256_hash = 38,
-    mac_address = 39,
-    url_referer = 40,
-    user_agent = 41,
-    uri_path = 42,
-    threat_cve_id = 43,
-    network_cidr_range = 44,
+    dns_name = 2
+    url = 3
+    rfc_822_email_message_file = 4
+    email_subject = 5
+    email_body = 6
+    email_attachment = 7
+    email_attachment_name = 8
+    email_sender = 9
+    malware_sample = 12
+    malware_md5_hash = 13
+    malware_sha_1_hash = 14
+    log_file = 15
+    other_file = 16
+    email_sender_name = 19
+    email_recipient = 20
+    malware_sample_fuzzy_hash = 22
+    user_account = 23
+    registry_key = 24
+    system_name = 25
+    process_name = 26
+    port = 27
+    service = 28
+    string = 29
+    mutex = 30
+    file_name = 31
+    password = 32
+    http_request_header = 34
+    http_response_header = 35
+    x509_certificate_file = 36
+    file_path = 37
+    malware_sha_256_hash = 38
+    mac_address = 39
+    url_referer = 40
+    user_agent = 41
+    uri_path = 42
+    threat_cve_id = 43
+    network_cidr_range = 44
     malware_family_variant = 45
 
 class Resilient:
