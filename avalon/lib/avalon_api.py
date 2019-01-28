@@ -82,7 +82,6 @@ class Avalon:
     def workspace_get(self, workspace_id):
         """
         Get Avalon workspace / graph details
-        :param api_token: Avalon API token
         :param workspace_id: Workspace / Graph ID
         :return: the responsefrom the Avalon API
         """
@@ -131,7 +130,6 @@ class Avalon:
     def workspace_add_node(self, workspace_id, data):
         """
         Create a new Avalon workspace
-        :param api_token: Avalon API token
         :param workspace_id: Workspace / Graph ID
         :param data: Dict with post data. It will be converted to JSON  
         :return: the responsefrom the Avalon API
@@ -189,7 +187,6 @@ class Avalon:
     def _build_headers(self):
         """
         build the header needed for API calls
-        :param api_token:
         :return: https headers
         """
         headers = HEADERS.copy()

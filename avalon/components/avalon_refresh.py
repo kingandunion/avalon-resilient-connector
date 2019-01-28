@@ -4,7 +4,6 @@
 
 import logging
 from datetime import datetime
-import pytz
 import tzlocal
 
 from resilient_circuits import ResilientComponent, function, handler, StatusMessage, FunctionResult, FunctionError
