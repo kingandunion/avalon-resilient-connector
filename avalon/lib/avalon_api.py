@@ -66,10 +66,10 @@ class Avalon:
         headers = self._build_headers()
 
         # payload
-        payload = json.dumps(data)
+        #payload = json.dumps(data)
 
         try:
-            resp = requests.post(url, verify=True, headers=headers, data=payload)
+            resp = requests.post(url, verify=True, headers=headers, json=data)
 
             if resp is None:
                 raise IntegrationError("no response returned")
@@ -143,10 +143,10 @@ class Avalon:
         headers = self._build_headers()
 
         # payload
-        payload = json.dumps(data)
+        #payload = json.dumps(data)
 
         try:
-            resp = requests.post(url, verify=True, headers=headers, data=payload)
+            resp = requests.post(url, verify=True, headers=headers, json=data)
             if resp is None:
                 raise IntegrationError("no response returned")
 
