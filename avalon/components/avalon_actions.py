@@ -1,4 +1,3 @@
-import json
 import logging
 
 from circuits.core.handlers import handler

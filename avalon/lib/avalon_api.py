@@ -66,10 +66,10 @@ class Avalon:
         headers = self._build_headers()
 
         # payload
-        payload = json.dumps(data)
+        #payload = json.dumps(data)
 
         try:
-            resp = requests.post(url, verify=True, headers=headers, data=payload)
+            resp = requests.post(url, verify=True, headers=headers, json=data)
 
             if resp is None:
                 raise IntegrationError("no response returned")
@@ -82,7 +82,6 @@ class Avalon:
     def workspace_get(self, workspace_id):
         """
         Get Avalon workspace / graph details
-        :param api_token: Avalon API token
         :param workspace_id: Workspace / Graph ID
         :return: the responsefrom the Avalon API
         """
@@ -118,7 +117,8 @@ class Avalon:
         url = "/".join((self.base_url, path))
 
         try:
-            resp = requests.get(url)
+            headers = self._build_headers()
+            resp = requests.get(url, headers=headers)
             if resp is None:
                 raise IntegrationError("no response returned")
 
@@ -131,7 +131,6 @@ class Avalon:
     def workspace_add_node(self, workspace_id, data):
         """
         Create a new Avalon workspace
-        :param api_token: Avalon API token
         :param workspace_id: Workspace / Graph ID
         :param data: Dict with post data. It will be converted to JSON  
         :return: the responsefrom the Avalon API
@@ -145,10 +144,10 @@ class Avalon:
         headers = self._build_headers()
 
         # payload
-        payload = json.dumps(data)
+        #payload = json.dumps(data)
 
         try:
-            resp = requests.post(url, verify=True, headers=headers, data=payload)
+            resp = requests.post(url, verify=True, headers=headers, json=data)
             if resp is None:
                 raise IntegrationError("no response returned")
 
@@ -189,7 +188,6 @@ class Avalon:
     def _build_headers(self):
         """
         build the header needed for API calls
-        :param api_token:
         :return: https headers
         """
         headers = HEADERS.copy()

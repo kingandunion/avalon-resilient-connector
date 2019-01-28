@@ -8,6 +8,7 @@ Prerequisites:
 
 ```
 resilient-circuits >=v30.0.0
+tzlocal >= 1.5.1
 ```
 
 To install in "development mode":
@@ -94,6 +95,7 @@ pip install fn_avalon<version>.tar.gz
 	
 	`base_url` should be set to `https://avalon.kingandunion.com`. NOTE: please do not include the trailing slash in 
 	that URL.
+
 	
 	The API token for your user can be found under [Avalon](https://avalon.kingandunion.com) > User > Profile Settings:
 	
@@ -101,7 +103,7 @@ pip install fn_avalon<version>.tar.gz
 
 ## Selftest
 
-Once you complete the configuratio , you can use the selftest command to do a basic connectivity test, as follows:
+Once you complete the configuration , you can use the selftest command to do a basic connectivity test, as follows:
 
 ```
 resilient-circuits selftest --list avalon

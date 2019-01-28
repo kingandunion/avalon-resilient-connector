@@ -13,7 +13,8 @@ setup(
     description="Resilient Circuits Components for Avalon",
     long_description="Resilient Circuits Components for Avalon",
     install_requires=[
-        'resilient_circuits>=30.0.0'
+        'resilient_circuits>=30.0.0',
+        'tzlocal>=1.5.1'
     ],
     packages=find_packages(),
     include_package_data=True,
