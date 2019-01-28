@@ -216,7 +216,7 @@ class Actions:
         if incident["properties"]["avalon_workspace_id"]:
             raise WorkspaceLinkError("Already linked to Avalon Workspace ID: {}.".format(incident["avalon_workspace_id"]))   
 
-        workspace_title = "{} (IBM Resilient)".format(incident["name"])
+        workspace_title = "{} (Resilient #{})".format(incident["name"], incident['id'])
         workspace_summary = "Created from IBM Resilient by {}. IBM Resilient Incident ID: {}".format(who, incident["id"])
         
         data = {
@@ -303,7 +303,8 @@ class Actions:
                     "term": node_value,
                     "type": node_type 
                 } 
-            ]
+            ],
+            "enrichment": "f"
         }
         resp = self.av.workspace_add_node(workspace_id, data)
         (error, msg) = Avalon.check_error(resp)
