@@ -305,7 +305,6 @@ class Actions:
                 } 
             ]
         }
-
         resp = self.av.workspace_add_node(workspace_id, data)
         (error, msg) = Avalon.check_error(resp)
         if error:

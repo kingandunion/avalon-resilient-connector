@@ -117,7 +117,8 @@ class Avalon:
         url = "/".join((self.base_url, path))
 
         try:
-            resp = requests.get(url)
+            headers = self._build_headers()
+            resp = requests.get(url, headers=headers)
             if resp is None:
                 raise IntegrationError("no response returned")
 
