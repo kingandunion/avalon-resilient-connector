@@ -92,7 +92,8 @@ pip install fn_avalon<version>.tar.gz
 	api_token=<avalon-api-token>
 	```
 	
-	`base_url` have to be set to `https://avalon.kingandunion.com`. 
+	`base_url` should be set to `https://avalon.kingandunion.com`. NOTE: please do not include the trailing slash in 
+	that URL.
 	
 	The API token for your user can be found under [Avalon](https://avalon.kingandunion.com) > User > Profile Settings:
 	
