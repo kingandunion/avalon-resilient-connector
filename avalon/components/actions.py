@@ -1,9 +1,14 @@
 import re
 import threading
+from datetime import datetime
+import tzlocal
 
 from avalon.lib.errors import IntegrationError, WorkspaceLinkError
 from avalon.lib.avalon_api import Avalon
 from avalon.lib.resilient_api import Resilient, ArtifactType
+
+from resilient_circuits import StatusMessage
+
 
 # maps Avalon Node type to IBM Resilient Artifact type
 # only the types that directly correspond to one another are mapped
@@ -166,37 +171,38 @@ class Actions:
                 # NOTE: This will still mark the action as complete in IBM Resilient
                 return "Error: {}".format(str(err))
 
-    # Stops the auto-refresh workflow 
-    def stop_auto_refresh_workflow(self, incident):
-        with pull_lock:
-            try:
-                incident_id = incident["id"]
+    def get_auto_refresh_incidents(self):
+        incidents = self.res.incident_get_all()
+        
+        auto_refresh_incidents = []
+        for incident in incidents:
+            properties = incident["properties"]
+            if "avalon_workspace_id" not in properties:
+                continue
 
-                # get auto refresh workflow running instance 
-                workflow_instances = self.res.incident_get_workflow_instances(incident_id)
+            if "avalon_auto_refresh" not in properties:
+                continue
 
-                if workflow_instances:
-                    workflow_instance = [
-                        wi 
-                        for wi in workflow_instances["entities"] 
-                        if "running" == wi.get("status") and
-                        "avalon_refresh" == wi["workflow"].get("programmatic_name") 
-                    ] 
+            if properties["avalon_auto_refresh"]:
+                auto_refresh_incidents.append(incident)    
 
-                    if workflow_instance:
-                        # terminate the workflow 
-                        workflow_instance_id = workflow_instance[0]["workflow_instance_id"] 
-                        self.res.incident_terminate_workflow_instance(workflow_instance_id)
+        return auto_refresh_incidents
 
-                # set the auto refresh field to false
-                old_value = self.res.incident_get_avalon_auto_refresh(incident) 
-                self.res.incident_set_avalon_auto_refresh(incident_id, False, old_value)
+    def refresh_nodes(self, incident):
+        try:
+            incident_id = incident["id"]
+    
+            new_pull_time = datetime.now(tz=tzlocal.get_localzone())
+            old_pull_time = self.res.incident_get_avalon_last_pull_time(incident)
 
-                return "Avalon Auto-refresh workflow stopped successfully."
-            except Exception as err:
-                # NOTE: This will still mark the action as complete in IBM Resilient
-                return "Error: {}".format(str(err))
+            result = self.pull_avalon_nodes(incident)            
 
+            # set the last pull time
+            self.res.incident_set_avalon_last_pull_time(incident_id, new_pull_time, old_pull_time)
+
+            return result
+        except Exception as err:
+            return str(err)
 
     @staticmethod    
     def validate_fields(fieldList, kwargs):

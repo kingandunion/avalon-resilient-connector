@@ -13,7 +13,7 @@ setup(
     description="Resilient Circuits Components for Avalon",
     long_description="Resilient Circuits Components for Avalon",
     install_requires=[
-        'resilient_circuits>=30.0.0',
+        'resilient_circuits>=30.0.84',
         'tzlocal>=1.5.1'
     ],
     packages=find_packages(),
@@ -27,8 +27,7 @@ setup(
     # pip install -e ./avalon/
     entry_points={
         "resilient.circuits.components": [
-            "AvalonActions = avalon.components.avalon_actions:AvalonActions",
-            "AvalonRefreshFunction = avalon.components.avalon_refresh:AvalonRefreshFunction"
+            "AvalonComponent = avalon.components.avalon_component:AvalonComponent"
         ],
         "resilient.circuits.configsection": ["gen_config = avalon.util.config:config_section_data"],
         "resilient.circuits.customize": ["customize = avalon.util.customize:customization_data"],
