@@ -157,6 +157,10 @@ class AvalonComponent(ResilientComponent):
     def _start_auto_refresh(self, incident):
         # Get the interval from the avalon_auto_refresh_time field 
         refresh_interval_minutes = self.actions.res.incident_get_avalon_auto_refresh_time(incident)
+        
+        # default to 60 minutes if not set in IBM Resilient
+        if not refresh_interval_minutes:
+            refresh_interval_minutes = 60
 
         # create timer
         incident_id = incident["id"]
