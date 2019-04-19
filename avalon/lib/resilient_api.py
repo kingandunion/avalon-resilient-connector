@@ -137,6 +137,25 @@ class Resilient:
     def incident_get_avalon_auto_refresh_time(self, incident):
         return incident["properties"]["avalon_auto_refresh_time"]
 
+
+    def incident_set_avalon_auto_refresh_time(self, incident_id, new_value, old_value = None):
+        patch_data =  {
+            "changes": [
+                {
+                "field": {
+                    "name": "avalon_auto_refresh_time"
+                },
+                "old_value": old_value if old_value else {},
+                "new_value": new_value
+                }
+            ],
+            "version": 0
+        }        
+    
+        incident_patch_uri = "/incidents/{}".format(incident_id)
+        resp = self.rest_client.patch(incident_patch_uri, patch_data)
+        return resp        
+
     def incident_get_avalon_last_pull_time(self, incident):
         last_pull_timestamp = incident["properties"]["avalon_last_pull_time"]
 
