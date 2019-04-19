@@ -218,11 +218,14 @@ class Actions:
 
     # creates an Avalon workspace / graph and links it to a Resilient incident
     def _create_avalon_workspace(self, incident, who):
+        incident_id = incident["id"]
+        incident_name = incident["name"]
+
         # check whether Avalon workspace has been created for this incident already
         if incident["properties"]["avalon_workspace_id"]:
             raise WorkspaceLinkError("Already linked to Avalon Workspace ID: {}.".format(incident["avalon_workspace_id"]))   
 
-        workspace_title = "{} (Resilient #{})".format(incident["name"], incident['id'])
+        workspace_title = "{} (Resilient #{})".format(incident_name, incident_id)
         workspace_summary = "Created from IBM Resilient by {}. IBM Resilient Incident ID: {}".format(who, incident["id"])
         
         data = {
@@ -244,14 +247,17 @@ class Actions:
         workspace_id = self.av.workspace_id_from_url(workspace_url)
 
         # Set the workspace id field
-        self.res.incident_set_avalon_workspace_id(incident["id"], workspace_id)
+        self.res.incident_set_avalon_workspace_id(incident_id, workspace_id)
 
         # Add a new artifact to the incident
-        artifact_title = "Avalon Workspace"
-        artifact_description = "Avalon workspace link: {}".format(workspace_url)
-        self.res.incident_add_workspace_artifact(incident["id"], 
+        artifact_title = f"Avalon Workspace #{workspace_id}"
+        artifact_description = f"Avalon workspace link: {workspace_url}"
+        self.res.incident_add_workspace_artifact(incident_id, 
                                                 artifact_title, artifact_description, 
                                                 workspace_id, workspace_url)
+
+        # Set auto-refresh time to 60 minutes
+        self.res.incident_set_avalon_auto_refresh_time(incident_id, 60)
 
     # creates Resilient artifacts from Avalon nodes 
     def _create_resilient_artifacts(self, incident_id, artifacts, nodes):
