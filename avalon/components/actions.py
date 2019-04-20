@@ -250,8 +250,8 @@ class Actions:
         self.res.incident_set_avalon_workspace_id(incident_id, workspace_id)
 
         # Add a new artifact to the incident
-        artifact_title = f"Avalon Workspace #{workspace_id}"
-        artifact_description = f"Avalon workspace link: {workspace_url}"
+        artifact_title = "Avalon Workspace #{}".format(workspace_id)
+        artifact_description = "Avalon workspace link: {}".format(workspace_url)
         self.res.incident_add_workspace_artifact(incident_id, 
                                                 artifact_title, artifact_description, 
                                                 workspace_id, workspace_url)
