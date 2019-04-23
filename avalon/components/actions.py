@@ -16,11 +16,12 @@ supported_artifacts = dict(
     ip = ArtifactType.ip_address,
     domain = ArtifactType.dns_name,
     url = ArtifactType.url,
-    email = ArtifactType.email_sender
+    email = ArtifactType.email_sender,
+    text = ArtifactType.string
 )
 
 # Supported hash types. These map to hash_malware in Avalon
-hash_node_type = "hash_malware"
+hash_node_types = ["hash_malware", "hash", "hash_ssl"]
 supported_hash_artifacts = [ 
     ArtifactType.malware_md5_hash,
     ArtifactType.malware_sha_1_hash,
@@ -262,7 +263,8 @@ class Actions:
     # creates Resilient artifacts from Avalon nodes 
     def _create_resilient_artifacts(self, incident_id, artifacts, nodes):
         # 1) match nodes to artifacts by type and value 
-        # 2) add artifacts only for nodes that are new  
+        # 2) add artifacts only for nodes that are new
+        existing_artifacts = {(a['type'], a['value']) for a in artifacts}
         for node in nodes:
             node_value = node[0]
             node_type = node[1]
@@ -276,13 +278,8 @@ class Actions:
                     continue
 
             # check whether artifact with the same type and value already exists 
-            artifact_value = node_value   
-            matching_artifacts = [
-                a for a in artifacts 
-                if a["type"] == artifact_type and a["value"] == artifact_value
-            ]
-
-            if len(matching_artifacts) > 0:
+            artifact_value = node_value
+            if (artifact_type, artifact_value) in existing_artifacts:
                 continue
 
             # add new artifact to incident
@@ -297,9 +294,10 @@ class Actions:
         # node type
         node_type = None
     
-        # is it a supported hash artifact 
+        # is it a supported hash artifact, if so, make it a generic hash, as we won't have info about whether it's
+        # an ssl hash or a malware hash.
         if artifact_type in supported_hash_artifacts:    
-            node_type = hash_node_type 
+            node_type = "hash"
 
         if not node_type:
             # is it a supported artifact but not a hash
@@ -376,7 +374,7 @@ class Actions:
 
     # translates Avalon hash_malware node type to IBM Resilient malware hash artifact type  
     def _hash_node_to_hash_artifact(self, node_type, node_value):
-        if node_type != hash_node_type:
+        if node_type not in hash_node_types:
             return None
 
         if isMD5.match(node_value):

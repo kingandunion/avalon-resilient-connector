@@ -117,4 +117,23 @@ Open the `Avalon` tab and click `Edit`.
 
 Enter number of minutes in the `Avalon: Auto Refresh Time`  field. Click `Save`. 
 
-> NOTE: If you do not see the Avalon tab please contact your system adminstrator. Your system adminstrator can customize the incident layout to add the Avalon tab andthe  Avalon custom fields.  
+> If you do not see the Avalon tab please contact your system adminstrator. Your system adminstrator can customize the incident layout to add the Avalon tab andthe  Avalon custom fields.  
+
+## 7. Notes
+
+### Supported Data types
+
+Not every artifact type in Resilient nor every node type in Avalon will be sync'd between the two systems. The supported data types that will sync are:
+
+| Avalon Data Type | Resilient Artifact Type|
+| ---| ---|
+| Domain Name | DNS Name |
+| IP Address | IP Address |
+| URL | URL|
+| Email | Sender Email |
+| Text | String |
+| Hash | One of: Malware MD5 Hash, Malware SHA1 Hash, Malware SHA 256 Hash|
+| Hash - SSL | One of: Malware MD5 Hash, Malware SHA1 Hash, Malware SHA 256 Hash|
+| Hash - Malware | One of: Malware MD5 Hash, Malware SHA1 Hash, Malware SHA 256 Hash|
+
+Other data types (such as Import Hashes in Avalon) will not sync between the two systems at present.
