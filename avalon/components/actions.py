@@ -1,9 +1,14 @@
 import re
 import threading
+from datetime import datetime
+import tzlocal
 
 from avalon.lib.errors import IntegrationError, WorkspaceLinkError
 from avalon.lib.avalon_api import Avalon
 from avalon.lib.resilient_api import Resilient, ArtifactType
+
+from resilient_circuits import StatusMessage
+
 
 # maps Avalon Node type to IBM Resilient Artifact type
 # only the types that directly correspond to one another are mapped
@@ -167,37 +172,38 @@ class Actions:
                 # NOTE: This will still mark the action as complete in IBM Resilient
                 return "Error: {}".format(str(err))
 
-    # Stops the auto-refresh workflow 
-    def stop_auto_refresh_workflow(self, incident):
-        with pull_lock:
-            try:
-                incident_id = incident["id"]
+    def get_auto_refresh_incidents(self):
+        incidents = self.res.incident_get_all()
+        
+        auto_refresh_incidents = []
+        for incident in incidents:
+            properties = incident["properties"]
+            if "avalon_workspace_id" not in properties:
+                continue
 
-                # get auto refresh workflow running instance 
-                workflow_instances = self.res.incident_get_workflow_instances(incident_id)
+            if "avalon_auto_refresh" not in properties:
+                continue
 
-                if workflow_instances:
-                    workflow_instance = [
-                        wi 
-                        for wi in workflow_instances["entities"] 
-                        if "running" == wi.get("status") and
-                        "avalon_refresh" == wi["workflow"].get("programmatic_name") 
-                    ] 
+            if properties["avalon_auto_refresh"]:
+                auto_refresh_incidents.append(incident)    
 
-                    if workflow_instance:
-                        # terminate the workflow 
-                        workflow_instance_id = workflow_instance[0]["workflow_instance_id"] 
-                        self.res.incident_terminate_workflow_instance(workflow_instance_id)
+        return auto_refresh_incidents
 
-                # set the auto refresh field to false
-                old_value = self.res.incident_get_avalon_auto_refresh(incident) 
-                self.res.incident_set_avalon_auto_refresh(incident_id, False, old_value)
+    def refresh_nodes(self, incident):
+        try:
+            incident_id = incident["id"]
+    
+            new_pull_time = datetime.now(tz=tzlocal.get_localzone())
+            old_pull_time = self.res.incident_get_avalon_last_pull_time(incident)
 
-                return "Avalon Auto-refresh workflow stopped successfully."
-            except Exception as err:
-                # NOTE: This will still mark the action as complete in IBM Resilient
-                return "Error: {}".format(str(err))
+            result = self.pull_avalon_nodes(incident)            
 
+            # set the last pull time
+            self.res.incident_set_avalon_last_pull_time(incident_id, new_pull_time, old_pull_time)
+
+            return result
+        except Exception as err:
+            return str(err)
 
     @staticmethod    
     def validate_fields(fieldList, kwargs):
@@ -213,11 +219,14 @@ class Actions:
 
     # creates an Avalon workspace / graph and links it to a Resilient incident
     def _create_avalon_workspace(self, incident, who):
+        incident_id = incident["id"]
+        incident_name = incident["name"]
+
         # check whether Avalon workspace has been created for this incident already
         if incident["properties"]["avalon_workspace_id"]:
             raise WorkspaceLinkError("Already linked to Avalon Workspace ID: {}.".format(incident["avalon_workspace_id"]))   
 
-        workspace_title = "{} (Resilient #{})".format(incident["name"], incident['id'])
+        workspace_title = "{} (Resilient #{})".format(incident_name, incident_id)
         workspace_summary = "Created from IBM Resilient by {}. IBM Resilient Incident ID: {}".format(who, incident["id"])
         
         data = {
@@ -239,14 +248,17 @@ class Actions:
         workspace_id = self.av.workspace_id_from_url(workspace_url)
 
         # Set the workspace id field
-        self.res.incident_set_avalon_workspace_id(incident["id"], workspace_id)
+        self.res.incident_set_avalon_workspace_id(incident_id, workspace_id)
 
         # Add a new artifact to the incident
-        artifact_title = "Avalon Workspace"
+        artifact_title = "Avalon Workspace #{}".format(workspace_id)
         artifact_description = "Avalon workspace link: {}".format(workspace_url)
-        self.res.incident_add_workspace_artifact(incident["id"], 
+        self.res.incident_add_workspace_artifact(incident_id, 
                                                 artifact_title, artifact_description, 
                                                 workspace_id, workspace_url)
+
+        # Set auto-refresh time to 60 minutes
+        self.res.incident_set_avalon_auto_refresh_time(incident_id, 60)
 
     # creates Resilient artifacts from Avalon nodes 
     def _create_resilient_artifacts(self, incident_id, artifacts, nodes):

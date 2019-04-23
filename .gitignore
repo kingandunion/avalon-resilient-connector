@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv
+
+# Dev components
+*.egg-info
+
+# IBM Resilient Logs
+logs/*
+!logs/.gitkeep
+
+# IBM Resilient Customization
+*.bak 
+dev.app.config
+
+# VSCode
+.ropeproject
+
