@@ -50,25 +50,13 @@ pip install fn_avalon<version>.tar.gz
     Incident fields:
     
     * `avalon_auto_refresh`
+    * `avalon_auto_refresh_time`
     * `avalon_last_pull_time`
     * `avalon_workspace_id`
-    
-    Function inputs:
-    
-    * `incident_id`
-    * `incident_name`
     
     Message Destinations:
     
     * `avalon_actions`
-    
-    Functions:
-    
-    * `avalon_refresh`
-    
-    Workflows:
-    
-    * `avalon_refresh`
     
     Rules:
     
@@ -76,8 +64,8 @@ pip install fn_avalon<version>.tar.gz
     * `Avalon: Pull Nodes`
     * `Avalon: Push Artifact`
     * `Avalon: Push Artifacts`
-    * `Avalon: Start Auto-refresh Workflow`
-    * `Avalon: Stop Auto-refresh Workflow`
+    * `Avalon: Start Auto-refresh`
+    * `Avalon: Stop Auto-refresh`
     
 2. Update and edit `app.config` by first running:
 
