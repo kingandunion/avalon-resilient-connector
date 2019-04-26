@@ -257,7 +257,9 @@ class Actions:
                                                 workspace_id, workspace_url)
 
         # Set auto-refresh time to 60 minutes
-        self.res.incident_set_avalon_auto_refresh_time(incident_id, 60)
+        auto_refresh_time = self.res.incident_get_avalon_auto_refresh_time(incident)
+        if auto_refresh_time is None:
+            self.res.incident_set_avalon_auto_refresh_time(incident_id, 60)
 
     # creates Resilient artifacts from Avalon nodes 
     def _create_resilient_artifacts(self, incident_id, artifacts, nodes):
