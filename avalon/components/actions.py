@@ -115,34 +115,38 @@ class Actions:
                 # get workspace ID
                 workspace_id = incident["properties"].get("avalon_workspace_id", None)
                 if not workspace_id:
-                    raise Exception("Please create Avalon workspace for this incident first.") 
-
-                # Call to get workspace / graph object. We need the graph UUID
-                workspace_uuid = self._get_avalon_workspace_uuid(workspace_id)
-
-                # Get all avalon nodes
-                nodes = self._get_all_avalon_nodes(workspace_id, workspace_uuid)
-
-                # Push all artifacts
-                total_success = True            
-                for artifact in artifacts:
-                    # ignore the special Avalon Workspace artifact
-                    artifact_type = Resilient.get_artifact_property(artifact, "type")
-                    if artifact_type and artifact_type == "avalon_workspace":
-                        continue
-
-                    # add only if node does not exist 
-                    if not self._find_node_for_artifact(nodes, artifact):
-                        success = self._create_avalon_node(artifact, workspace_id)
-                        total_success = total_success and success 
-
-                if not total_success:
-                    return "Some artifacts could not be pushed to Avalon."
-        
-                return "Successfully pushed all artifacts to Avalon."
+                    raise Exception("Please create Avalon workspace for this incident first.")
+                response = self._push_resilient_artifacts_task(workspace_id, artifacts)
             except Exception as err:
                 # NOTE: This will still mark the action as complete in IBM Resilient
                 return "Error: {}".format(str(err))
+        return response
+
+
+    def _push_resilient_artifacts_task(self, workspace_id, artifacts):
+        # Call to get workspace / graph object. We need the graph UUID
+        workspace_uuid = self._get_avalon_workspace_uuid(workspace_id)
+
+        # Get all avalon nodes
+        nodes = self._get_all_avalon_nodes(workspace_id, workspace_uuid)
+
+        # Push all artifacts
+        total_success = True
+        for artifact in artifacts:
+            # ignore the special Avalon Workspace artifact
+            artifact_type = Resilient.get_artifact_property(artifact, "type")
+            if artifact_type and artifact_type == "avalon_workspace":
+                continue
+
+            # add only if node does not exist
+            if not self._find_node_for_artifact(nodes, artifact):
+                success = self._create_avalon_node(artifact, workspace_id)
+                total_success = total_success and success
+
+        if not total_success:
+            return "Some artifacts could not be pushed to Avalon."
+
+        return "Successfully pushed all artifacts to Avalon."
 
 
     # Pushes one artifact from a Resilient Incident to an Avalon Workspace node 
@@ -262,7 +266,12 @@ class Actions:
         if auto_refresh_time is None:
             self.res.incident_set_avalon_auto_refresh_time(incident_id, 60)
 
-    # creates Resilient artifacts from Avalon nodes 
+        artifacts = self.res.incident_get_artifacts(incident_id)
+        response = self._push_resilient_artifacts_task(workspace_id, artifacts)
+        return response
+
+
+# creates Resilient artifacts from Avalon nodes
     def _create_resilient_artifacts(self, incident_id, artifacts, nodes):
         # 1) match nodes to artifacts by type and value 
         # 2) add artifacts only for nodes that are new

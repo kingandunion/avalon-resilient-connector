@@ -74,12 +74,10 @@ class AvalonComponent(ResilientComponent):
         # workspace_title = clean_html(kwargs.get(u"avalon_workspace_title"))  # text
         # workspace_summary = clean_html(kwargs.get(u"avalon_workspace_summary"))  # text
 
-        response = self.actions.create_avalon_workspace(incident, who)
-        self.actions.push_resilient_artifacts(incident)
-        return response
+        return self.actions.create_avalon_workspace(incident, who)
 
 
-# Handles "Avalon: Pull Nodes" action
+    # Handles "Avalon: Pull Nodes" action
     @handler("avalon_pull_nodes")
     def handle_avalon_pull_nodes(self, event, *args, **kwargs):
         incident = event.message["incident"]
