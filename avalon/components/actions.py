@@ -58,8 +58,6 @@ class Actions:
         try:
             # create Avalon workspace
             self._create_avalon_workspace(incident, who)
-            # push the already-existing artifacts up once that's done.
-            self.push_resilient_artifacts(incident)
             return "Avalon workspace created successfully."
         except WorkspaceLinkError:
             return "Avalon workspace already exists for this incident."
